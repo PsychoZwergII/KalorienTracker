@@ -1,6 +1,7 @@
 # GitHub Actions APK Build - Quick Guide
 
 ## 🎯 Ziel
+
 Automatischer APK Build bei jedem Git Push → APK Download von GitHub → Installation auf Handy
 
 ---
@@ -29,6 +30,7 @@ Automatischer APK Build bei jedem Git Push → APK Download von GitHub → Insta
 ### Schritt 2: Code zu GitHub pushen (3 Min)
 
 Führe aus:
+
 ```powershell
 # Git Setup Script ausführen
 .\setup_github.ps1
@@ -62,6 +64,7 @@ Beim ersten Push wirst du nach GitHub Login gefragt - einfach einloggen!
 #### 3.3 Firebase Options (optional, für später)
 
 Wenn du `firebase_options.dart` hast:
+
 1. Wieder **"New repository secret"**
 2. Name: `FIREBASE_OPTIONS`
 3. Value: Kompletten Inhalt von `firebase_options.dart`
@@ -72,6 +75,7 @@ Wenn du `firebase_options.dart` hast:
 ### Schritt 4: APK Build starten (1 Min)
 
 #### Option A: Automatisch (bei jedem Push)
+
 ```powershell
 # Einfach Code ändern und pushen:
 git add .
@@ -82,6 +86,7 @@ git push
 ```
 
 #### Option B: Manuell triggern
+
 1. Gehe zu: `https://github.com/YOUR_USERNAME/KalorienTracker/actions`
 2. Wähle Workflow: **"Build Android APK"**
 3. Klicke **"Run workflow"** (rechts)
@@ -111,6 +116,7 @@ git push
 ### Schritt 7: APK auf Handy installieren (2 Min)
 
 #### Methode A: USB Kabel
+
 1. Kopiere `app-release.apk` auf Handy
 2. Öffne Datei-Manager auf Handy
 3. Tippe auf `app-release.apk`
@@ -118,12 +124,14 @@ git push
 5. **Installieren** ✅
 
 #### Methode B: Cloud/Email
+
 1. Lade APK in Google Drive / OneDrive hoch
 2. Öffne auf Handy
 3. Download APK
 4. Installieren wie oben
 
 #### Methode C: QR Code
+
 1. Nutze: https://www.qr-code-generator.com
 2. Upload APK → QR Code generieren
 3. Mit Handy scannen → Download → Installieren
@@ -135,16 +143,19 @@ git push
 ### Problem: "Build failed"
 
 **Check 1: google-services.json Secret korrekt?**
+
 ```
 GitHub → Settings → Secrets → GOOGLE_SERVICES_JSON vorhanden?
 ```
 
 **Check 2: Workflow File korrekt?**
+
 ```
 .github/workflows/build-apk.yml muss existieren
 ```
 
 **Check 3: Logs prüfen**
+
 ```
 GitHub Actions → Failed Run → Logs anschauen
 ```
@@ -160,6 +171,7 @@ GitHub Actions → Failed Run → Logs anschauen
 ### Problem: "App crashes on start"
 
 → Firebase nicht richtig konfiguriert. Prüfe:
+
 - `google-services.json` im GitHub Secret korrekt?
 - Firebase Projekt aktiv?
 - Cloud Functions deployed?
@@ -184,22 +196,23 @@ graph LR
 
 ## ⚡ Zusammenfassung
 
-| Schritt | Dauer | Was passiert |
-|---------|-------|--------------|
-| 1. GitHub Repo erstellen | 2 Min | Repository auf GitHub anlegen |
-| 2. Code pushen | 3 Min | Projekt auf GitHub hochladen |
-| 3. Secrets einrichten | 5 Min | Firebase Config hinterlegen |
-| 4. Build triggern | 1 Min | APK Build starten |
-| 5. Warten | 10 Min | GitHub baut APK |
-| 6. APK download | 1 Min | Fertige APK herunterladen |
-| 7. Installation | 2 Min | APK auf Handy installieren |
-| **TOTAL** | **~25 Min** | **Fertige App auf Handy!** ✅ |
+| Schritt                  | Dauer       | Was passiert                  |
+| ------------------------ | ----------- | ----------------------------- |
+| 1. GitHub Repo erstellen | 2 Min       | Repository auf GitHub anlegen |
+| 2. Code pushen           | 3 Min       | Projekt auf GitHub hochladen  |
+| 3. Secrets einrichten    | 5 Min       | Firebase Config hinterlegen   |
+| 4. Build triggern        | 1 Min       | APK Build starten             |
+| 5. Warten                | 10 Min      | GitHub baut APK               |
+| 6. APK download          | 1 Min       | Fertige APK herunterladen     |
+| 7. Installation          | 2 Min       | APK auf Handy installieren    |
+| **TOTAL**                | **~25 Min** | **Fertige App auf Handy!** ✅ |
 
 ---
 
 ## 🎯 Nächste Schritte nach erstem Build
 
 ### Automatische Updates einrichten:
+
 ```powershell
 # Code ändern
 # Dann:
@@ -212,6 +225,7 @@ git push
 ```
 
 ### Release Tags erstellen:
+
 ```powershell
 git tag v1.0.0
 git push --tags
@@ -221,6 +235,7 @@ git push --tags
 ```
 
 ### Beta Tester einladen:
+
 - Repository auf Public stellen
 - Download-Link teilen: `https://github.com/YOUR_USERNAME/KalorienTracker/releases/latest`
 - Nutzer können APK direkt herunterladen
@@ -250,6 +265,7 @@ Nach Installation hast du eine voll funktionsfähige App mit:
 `https://console.firebase.google.com`
 
 **Dokumentation:**
+
 - `START_HERE.md` - Übersicht
 - `DEVELOPER.md` - Technische Details
 - `SETUP_GUIDE.md` - Deployment
