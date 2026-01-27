@@ -1,0 +1,132 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.19.0"
+          channel: "stable"
+          cache: true
+
+      - name: Create firebase_options.dart
+        run: |
+          mkdir -p flutter_app/lib
+          cat > flutter_app/lib/firebase_options.dart << 'EOF'
+          // TODO: Replace with your Firebase config
+          // Get from: flutterfire configure
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform {
+              switch (defaultTargetPlatform) {
+                case TargetPlatform.android:
+                  return android;
+                case TargetPlatform.iOS:
+                  return ios;
+                default:
+                  throw UnsupportedError('DefaultFirebaseOptions are not supported for this platform.');
+              }
+            }
+            
+            static const FirebaseOptions android = FirebaseOptions(
+              apiKey: 'YOUR_API_KEY',
+              appId: 'YOUR_APP_ID',
+              messagingSenderId: 'YOUR_SENDER_ID',
+              projectId: 'YOUR_PROJECT_ID',
+              storageBucket: 'YOUR_BUCKET',
+            );
+            
+            static const FirebaseOptions ios = FirebaseOptions(
+              apiKey: 'YOUR_API_KEY',
+              appId: 'YOUR_APP_ID',
+              messagingSenderId: 'YOUR_SENDER_ID',
+              projectId: 'YOUR_PROJECT_ID',
+              storageBucket: 'YOUR_BUCKET',
+              iosClientId: 'YOUR_IOS_CLIENT_ID',
+              iosBundleId: 'YOUR_BUNDLE_ID',
+            );
+          }
+          EOF
+
+      - name: Create google-services.json
+        run: |
+          mkdir -p flutter_app/android/app
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > flutter_app/android/app/google-services.json
+
+      - name: Install dependencies
+        run: |
+          cd flutter_app
+          flutter pub get
+
+      - name: Build APK (Debug)
+        if: github.event_name == 'pull_request'
+        run: |
+          cd flutter_app
+          flutter build apk --debug
+
+      - name: Build APK (Release)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          cd flutter_app
+          flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kalorientracker-app
+          path: |
+            flutter_app/build/app/outputs/flutter-apk/app-release.apk
+            flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 30
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Release v1.0.${{ github.run_number }}
+          files: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          body: |
+            ## KalorienTracker v1.0.${{ github.run_number }}
+
+            ### Features:
+            - Google Sign-In & Email/Password Authentication
+            - AI Food Analysis (Gemini)
+            - Barcode Scanner
+            - Daily Calorie Tracking
+            - Favorites Management
+
+            ### Installation:
+            1. Download `app-release.apk`
+            2. Enable "Install from unknown sources"
+            3. Install APK on your phone
+            4. Open app and sign in
+
+            ### Requirements:
+            - Android 5.0+ (API Level 21+)
+            - Internet connection
+            - Google Play Services
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,183 @@
+# ============================================
+# SECRETS & API KEYS (NEVER COMMIT!)
+# ============================================
+# Firebase Configuration Files (contain API keys)
+flutter_app/lib/firebase_options.dart
+flutter_app/android/app/google-services.json
+flutter_app/ios/Runner/GoogleService-Info.plist
+
+# Environment Variables
+.env
+.env.local
+.env.production
+*.env
+
+# Gradle Properties (contains API keys)
+gradle.properties
+flutter_app/android/gradle.properties
+
+# Firebase Service Account Keys
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+service-account.json
+
+# Firebase Local Config
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# ============================================
+# FLUTTER & DART
+# ============================================
+# Flutter build outputs
+flutter_app/build/
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.packages
+flutter_app/.pub-cache/
+flutter_app/.pub/
+flutter_app/pubspec.lock
+
+# Flutter generated files
+flutter_app/ios/Flutter/Generated.xcconfig
+flutter_app/ios/Flutter/flutter_export_environment.sh
+flutter_app/ios/Flutter/Flutter.framework
+flutter_app/ios/Flutter/Flutter.podspec
+flutter_app/ios/Pods/
+flutter_app/ios/Podfile.lock
+
+# ============================================
+# ANDROID
+# ============================================
+# Gradle files
+.gradle/
+build/
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Local configuration
+local.properties
+
+# Android Studio files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Keystore files (IMPORTANT!)
+*.jks
+*.keystore
+flutter_app/android/key.properties
+flutter_app/android/app/upload-keystore.jks
+flutter_app/android/app/release-keystore.jks
+
+# IDE-specific files
+.classpath
+.project
+.settings/
+*.launch
+.run/
+
+# External native build
+.externalNativeBuild
+.cxx/
+
+# ============================================
+# iOS
+# ============================================
+# Xcode
+flutter_app/ios/Runner.xcworkspace/
+flutter_app/ios/Runner.xcodeproj/*.pbxuser
+flutter_app/ios/Runner.xcodeproj/*.mode1v3
+flutter_app/ios/Runner.xcodeproj/*.mode2v3
+flutter_app/ios/Runner.xcodeproj/*.perspectivev3
+flutter_app/ios/Runner.xcodeproj/xcuserdata/
+flutter_app/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+
+# CocoaPods
+flutter_app/ios/Pods/
+flutter_app/ios/Podfile.lock
+
+# ============================================
+# NODE.JS (Firebase Functions)
+# ============================================
+firebase/functions/node_modules/
+firebase/functions/package-lock.json
+firebase/functions/.runtimeconfig.json
+firebase/functions/lib/
+
+# ============================================
+# IDE & EDITORS
+# ============================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibExplications.xml
+
+# ============================================
+# OS FILES
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+Thumbs.db
+thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# ============================================
+# LOGS & TEMPORARY FILES
+# ============================================
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Test coverage
+coverage/
+jacoco.xml
+lcov.info
+
+# ============================================
+# OLD PROJECT FILES (Cleanup)
+# ============================================
+# Old Android app (if not already deleted)
+app/
+settings.gradle
+build.gradle
+
+# Old documentation (if not already deleted)
+API_KEY_SETUP.md
+COMPLETION_CHECKLIST.md
+FILE_STRUCTURE.md
+IMPLEMENTATION_SUMMARY.md
+IMPLEMENTATION_COMPLETE.md
+ARCHITECTURE.md
+QUICKSTART.md
+QUICK_START.txt
+EMAIL_AUTH_UPDATE.md
