@@ -49,6 +49,9 @@ dependencies:
   shared_preferences: ^2.2.0
   flutter_dotenv: ^5.1.0
 
+  # Charts
+  fl_chart: ^0.68.0
+
   # Date/Time
   table_calendar: ^3.0.0
 
