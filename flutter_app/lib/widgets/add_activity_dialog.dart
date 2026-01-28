@@ -25,6 +25,7 @@ class _AddActivityDialogState extends State<AddActivityDialog> {
   final _notesController = TextEditingController();
   
   ActivityType _selectedType = ActivityType.walking;
+  ActivityIntensity _selectedIntensity = ActivityIntensity.medium;
   bool _isSaving = false;
 
   @override
@@ -42,6 +43,7 @@ class _AddActivityDialogState extends State<AddActivityDialog> {
       type: _selectedType,
       durationMinutes: duration,
       weightKg: weight,
+      intensity: _selectedIntensity,
     );
   }
 
@@ -62,6 +64,7 @@ class _AddActivityDialogState extends State<AddActivityDialog> {
         type: _selectedType,
         durationMinutes: duration,
         caloriesBurned: calories,
+        intensity: _selectedIntensity,
         timestamp: DateTime.now(),
         notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
@@ -141,6 +144,31 @@ class _AddActivityDialogState extends State<AddActivityDialog> {
                   onChanged: (value) {
                     if (value != null) {
                       setState(() => _selectedType = value);
+                    }
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+
+                // Intensität
+                DropdownButtonFormField<ActivityIntensity>(
+                  value: _selectedIntensity,
+                  decoration: InputDecoration(
+                    labelText: 'Intensität',
+                    prefixIcon: const Icon(Icons.speed),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  items: ActivityIntensity.values.map((intensity) {
+                    return DropdownMenuItem(
+                      value: intensity,
+                      child: Text(intensity.label),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedIntensity = value);
                     }
                   },
                 ),

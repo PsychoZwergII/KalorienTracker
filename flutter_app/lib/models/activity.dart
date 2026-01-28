@@ -10,6 +10,7 @@ class Activity {
   final String? customName; // Falls "other" gewählt wird
   final int durationMinutes;
   final double caloriesBurned;
+  final ActivityIntensity intensity;
   final DateTime timestamp;
   final String? notes;
 
@@ -20,6 +21,7 @@ class Activity {
     this.customName,
     required this.durationMinutes,
     required this.caloriesBurned,
+    this.intensity = ActivityIntensity.medium,
     required this.timestamp,
     this.notes,
   });
@@ -30,14 +32,45 @@ class Activity {
     required ActivityType type,
     required int durationMinutes,
     required double weightKg,
+    ActivityIntensity intensity = ActivityIntensity.medium,
   }) {
     final met = type.metValue;
     final hours = durationMinutes / 60.0;
-    return met * weightKg * hours;
+    return met * weightKg * hours * intensity.multiplier;
   }
 
   factory Activity.fromJson(Map<String, dynamic> json) => _$ActivityFromJson(json);
   Map<String, dynamic> toJson() => _$ActivityToJson(this);
+}
+
+enum ActivityIntensity {
+  low,
+  medium,
+  high,
+}
+
+extension ActivityIntensityExtension on ActivityIntensity {
+  double get multiplier {
+    switch (this) {
+      case ActivityIntensity.low:
+        return 0.8;
+      case ActivityIntensity.medium:
+        return 1.0;
+      case ActivityIntensity.high:
+        return 1.2;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ActivityIntensity.low:
+        return 'Niedrig';
+      case ActivityIntensity.medium:
+        return 'Mittel';
+      case ActivityIntensity.high:
+        return 'Hoch';
+    }
+  }
 }
 
 enum ActivityType {

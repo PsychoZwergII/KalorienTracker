@@ -9,7 +9,9 @@ import '../models/nutrients.dart';
 import '../models/food_item.dart';
 
 class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({Key? key}) : super(key: key);
+  final String? mealType;
+
+  const ScannerScreen({Key? key, this.mealType}) : super(key: key);
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
@@ -102,6 +104,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         fiber: _result!.fiber,
         timestamp: DateTime.now(),
         source: 'gemini',
+        mealType: widget.mealType,
       );
 
       await _firestoreService.addFoodItem(user.uid, foodItem);

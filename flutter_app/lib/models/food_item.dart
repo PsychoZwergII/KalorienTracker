@@ -16,6 +16,7 @@ class FoodItem {
   final DateTime timestamp;
   final bool isFavorite;
   final String source; // "gemini", "openfoodfacts", "manual"
+  final String? mealType; // "breakfast", "lunch", "dinner", "snack"
 
   FoodItem({
     required this.id,
@@ -29,6 +30,7 @@ class FoodItem {
     required this.timestamp,
     this.isFavorite = false,
     this.source = "manual",
+    this.mealType,
   });
 
   factory FoodItem.fromJson(Map<String, dynamic> json) =>
@@ -48,6 +50,7 @@ class FoodItem {
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       isFavorite: data['isFavorite'] ?? false,
       source: data['source'] ?? 'manual',
+      mealType: data['mealType'],
     );
   }
 
@@ -65,6 +68,7 @@ class FoodItem {
       'timestamp': Timestamp.fromDate(timestamp),
       'isFavorite': isFavorite,
       'source': source,
+      'mealType': mealType,
     };
   }
 
@@ -80,6 +84,7 @@ class FoodItem {
     DateTime? timestamp,
     bool? isFavorite,
     String? source,
+    String? mealType,
   }) {
     return FoodItem(
       id: id ?? this.id,
@@ -93,6 +98,7 @@ class FoodItem {
       timestamp: timestamp ?? this.timestamp,
       isFavorite: isFavorite ?? this.isFavorite,
       source: source ?? this.source,
+      mealType: mealType ?? this.mealType,
     );
   }
 }

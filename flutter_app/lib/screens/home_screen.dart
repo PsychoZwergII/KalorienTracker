@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/activity.dart';
+import '../models/food_item.dart';
+import '../models/user_profile.dart';
+import '../models/weight_log.dart';
 import '../services/firestore_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../widgets/add_activity_dialog.dart';
+import '../widgets/weight_progress_chart.dart';
+import 'meal_add_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -16,38 +24,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 1; // Start auf Tagebuch
+  int _currentIndex = 0; // Start auf Coach
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAuthService _authService = FirebaseAuthService();
-  DateTime _selectedDate = DateTime.now();
   
   // Kalorienziele und aktuelle Werte
   int _calorieGoal = 2256;
-  int _caloriesConsumed = 0;
-  int _caloriesBurned = 0;
-  int _streak = 2;
-  
-  // Makronährstoff-Ziele
-  Map<String, Map<String, num>> _macros = {
-    'Eiweiß': {'current': 0, 'goal': 158},
-    'Fett': {'current': 0, 'goal': 50},
-    'Kohlenh.': {'current': 0, 'goal': 282},
-    'Ballastst.': {'current': 0, 'goal': 23},
-  };
-  
-  // Mahlzeiten für heute
-  List<Map<String, dynamic>> _meals = [
-    {'name': 'Frühstück', 'icon': '🥐☕', 'calories': 0, 'goal': 677},
-    {'name': 'Mittagessen', 'icon': '🍽️🍊', 'calories': 0, 'goal': 677},
-    {'name': 'Abendessen', 'icon': '🍱🍞', 'calories': 0, 'goal': 677},
-    {'name': 'Snacks', 'icon': '🥤🥝', 'calories': 0, 'goal': 226},
-  ];
+  bool _goalsPersisted = false;
 
   @override
   Widget build(BuildContext context) {
     final screens = [
       _buildCoachTab(),
-      _buildDiaryTab(),
+      _buildProgressTab(),
       _buildProfileTab(),
     ];
     
@@ -67,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Coach',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            activeIcon: Icon(Icons.book),
-            label: 'Tagebuch',
+            icon: Icon(Icons.show_chart),
+            activeIcon: Icon(Icons.show_chart),
+            label: 'Fortschritt',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -82,223 +71,246 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCoachTab() {
-    final caloriesRemaining = _calorieGoal - _caloriesConsumed + _caloriesBurned;
-    
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              // Kalorien-Übersicht Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFE8F4F8), Colors.white],
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // Streak Badge
-                    Align(
-                      alignment: Alignment.topRight,
+    final userId = widget.user.uid;
+
+    return StreamBuilder<UserProfile?>(
+      stream: _firestoreService.streamUserProfile(userId),
+      builder: (context, profileSnapshot) {
+        final profile = profileSnapshot.data;
+        final calorieGoal = _calculateCalorieGoal(profile);
+        final macroGoals = _calculateMacroGoals(calorieGoal);
+
+        if (!_goalsPersisted && profile != null && calorieGoal > 0) {
+          _persistGoals(userId, calorieGoal, macroGoals);
+        }
+
+        return StreamBuilder<List<FoodItem>>(
+          stream: _firestoreService.getTodaysFoods(userId),
+          builder: (context, foodSnapshot) {
+            final foods = foodSnapshot.data ?? [];
+            final foodTotals = _calculateFoodTotals(foods);
+            final meals = _buildMealsFromFoods(foods, calorieGoal);
+
+            return StreamBuilder<List<Activity>>(
+              stream: _firestoreService.getTodaysActivities(userId),
+              builder: (context, activitySnapshot) {
+                final activities = activitySnapshot.data ?? [];
+                final caloriesBurned = activities.fold<int>(
+                  0,
+                  (sum, activity) => sum + activity.caloriesBurned.round(),
+                );
+
+                final caloriesConsumed = foodTotals['calories']?.round() ?? 0;
+                final caloriesRemaining = calorieGoal - caloriesConsumed + caloriesBurned;
+
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          // Kalorien-Übersicht Header
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0xFFE8F4F8), Colors.white],
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                if (profile == null)
+                                  _buildProfileMissingBanner(),
+
+                                const SizedBox(height: 8),
+
+                                // Hauptanzeige: Kalorien übrig
+                                Text(
+                                  '$caloriesRemaining',
+                                  style: const TextStyle(
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2C3E50),
+                                    height: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'kcal',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'übrig',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 30),
+
+                                // Gegessen vs Verbrannt
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '$caloriesConsumed',
+                                          style: const TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF2C3E50),
+                                          ),
+                                        ),
+                                        const Text(
+                                          'Gegessen',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      width: 2,
+                                      height: 50,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '$caloriesBurned',
+                                          style: const TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF2C3E50),
+                                          ),
+                                        ),
+                                        const Text(
+                                          'Verbrannt',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Makronährstoffe Card
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Makronährstoffe',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2C3E50),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  height: 3,
+                                  width: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildMacroCircle(
+                                      'Eiweiß',
+                                      foodTotals['protein'] ?? 0,
+                                      macroGoals['protein'] ?? 0,
+                                      Colors.pink.shade300,
+                                    ),
+                                    _buildMacroCircle(
+                                      'Fett',
+                                      foodTotals['fat'] ?? 0,
+                                      macroGoals['fat'] ?? 0,
+                                      Colors.amber.shade300,
+                                    ),
+                                    _buildMacroCircle(
+                                      'Kohlenh.',
+                                      foodTotals['carbs'] ?? 0,
+                                      macroGoals['carbs'] ?? 0,
+                                      Colors.blue.shade300,
+                                    ),
+                                    _buildMacroCircle(
+                                      'Ballastst.',
+                                      foodTotals['fiber'] ?? 0,
+                                      macroGoals['fiber'] ?? 0,
+                                      Colors.orange.shade300,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+
+                    // Mahlzeiten & Aktivitäten
+                    SliverToBoxAdapter(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                        decoration: const BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.orange.shade200, width: 2),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(30),
+                            topRight: Radius.circular(30),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🔥', style: TextStyle(fontSize: 20)),
-                            const SizedBox(width: 6),
-                            Text(
-                              '$_streak',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ],
+                        child: _buildMealsAndActivities(
+                          meals: meals,
+                          caloriesBurned: caloriesBurned,
+                          userProfile: profile,
                         ),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Hauptanzeige: Kalorien übrig
-                    Text(
-                      '$caloriesRemaining',
-                      style: const TextStyle(
-                        fontSize: 64,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'kcal',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'übrig',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Gegessen vs Verbrannt
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Column(
-                          children: [
-                            Text(
-                              '$_caloriesConsumed',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2C3E50),
-                              ),
-                            ),
-                            const Text(
-                              'Gegessen',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          width: 2,
-                          height: 50,
-                          color: Colors.grey.shade300,
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                              '$_caloriesBurned',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2C3E50),
-                              ),
-                            ),
-                            const Text(
-                              'Verbrannt',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ],
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Makronährstoffe Card
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Makronährstoffe',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: 3,
-                      width: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: _macros.entries.map((entry) {
-                        final name = entry.key;
-                        final current = entry.value['current']!;
-                        final goal = entry.value['goal']!;
-                        Color color;
-                        
-                        if (name == 'Eiweiß') {
-                          color = Colors.pink.shade300;
-                        } else if (name == 'Fett') {
-                          color = Colors.amber.shade300;
-                        } else if (name == 'Kohlenh.') {
-                          color = Colors.blue.shade300;
-                        } else {
-                          color = Colors.orange.shade300;
-                        }
-                        
-                        return _buildMacroCircle(name, current, goal, color);
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-        
-        // Tagebuch Bereich (scrollbar)
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            child: _buildDiaryContent(),
-          ),
-        ),
-      ],
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -353,71 +365,55 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDiaryTab() {
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          floating: true,
-          pinned: false,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          toolbarHeight: 80,
-          flexibleSpace: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildProgressTab() {
+    return StreamBuilder<UserProfile?>(
+      stream: _firestoreService.streamUserProfile(widget.user.uid),
+      builder: (context, profileSnapshot) {
+        return StreamBuilder<List<WeightLog>>(
+          stream: _firestoreService.streamWeightLogs(widget.user.uid, limit: 90),
+          builder: (context, weightSnapshot) {
+            final profile = profileSnapshot.data;
+            final logs = weightSnapshot.data ?? [];
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 40, 16, 24),
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, size: 32),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-                    });
-                  },
+                const Text(
+                  'Fortschritt',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
+                  ),
                 ),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 24, color: Color(0xFF2C3E50)),
-                    const SizedBox(width: 12),
-                    Text(
-                      _isToday(_selectedDate) ? 'Heute' : _formatDate(_selectedDate),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right, size: 32),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDate = _selectedDate.add(const Duration(days: 1));
-                    });
-                  },
+                const SizedBox(height: 16),
+                if (profile == null)
+                  _buildProfileMissingBanner(),
+                const SizedBox(height: 16),
+                WeightProgressChart(
+                  weightLogs: logs,
+                  userProfile: profile,
                 ),
               ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Container(
-            color: Colors.white,
-            child: _buildDiaryContent(),
-          ),
-        ),
-      ],
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildDiaryContent() {
+  Widget _buildMealsAndActivities({
+    required List<Map<String, dynamic>> meals,
+    required int caloriesBurned,
+    required UserProfile? userProfile,
+  }) {
     return Column(
       children: [
         // Mahlzeiten
-        ..._meals.map((meal) => _buildMealCard(
+        ...meals.map((meal) => _buildMealCard(
           meal['name'],
           meal['icon'],
+          meal['mealType'],
           meal['calories'],
           meal['goal'],
         )),
@@ -450,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Text(
-                          '$_caloriesBurned kcal Verbrannt',
+                          '$caloriesBurned kcal Verbrannt',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
@@ -476,8 +472,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Aktivität hinzufügen - Coming Soon!')),
+                    showDialog(
+                      context: context,
+                      builder: (context) => AddActivityDialog(
+                        userId: widget.user.uid,
+                        userProfile: userProfile,
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -504,7 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMealCard(String name, String icon, int calories, int goal) {
+  Widget _buildMealCard(String name, String icon, String mealType, int calories, int goal) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -563,11 +563,174 @@ class _HomeScreenState extends State<HomeScreen> {
             child: IconButton(
               icon: const Icon(Icons.add, color: Colors.white, size: 20),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('$name hinzufügen - Coming Soon!')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MealAddScreen(
+                      mealName: name,
+                      mealType: mealType,
+                    ),
+                  ),
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _calculateCalorieGoal(UserProfile? profile) {
+    final goal = profile?.calculateDailyCalorieGoal();
+    if (goal == null || goal.isNaN) return _calorieGoal;
+    return goal.round();
+  }
+
+  Map<String, double> _calculateMacroGoals(int calorieGoal) {
+    if (calorieGoal <= 0) {
+      return {
+        'protein': 0,
+        'fat': 0,
+        'carbs': 0,
+        'fiber': 0,
+      };
+    }
+
+    final protein = (calorieGoal * 0.30) / 4; // 30% Protein
+    final fat = (calorieGoal * 0.25) / 9; // 25% Fett
+    final carbs = (calorieGoal * 0.45) / 4; // 45% Kohlenhydrate
+    final fiber = (calorieGoal / 1000.0) * 14; // 14g pro 1000 kcal
+
+    return {
+      'protein': protein,
+      'fat': fat,
+      'carbs': carbs,
+      'fiber': fiber,
+    };
+  }
+
+  Map<String, double> _calculateFoodTotals(List<FoodItem> foods) {
+    double calories = 0;
+    double protein = 0;
+    double fat = 0;
+    double carbs = 0;
+    double fiber = 0;
+
+    for (final food in foods) {
+      calories += food.calories;
+      protein += food.protein;
+      fat += food.fat;
+      carbs += food.carbs;
+      fiber += food.fiber;
+    }
+
+    return {
+      'calories': calories,
+      'protein': protein,
+      'fat': fat,
+      'carbs': carbs,
+      'fiber': fiber,
+    };
+  }
+
+  List<Map<String, dynamic>> _buildMealsFromFoods(List<FoodItem> foods, int calorieGoal) {
+    final mealTotals = {
+      'breakfast': 0.0,
+      'lunch': 0.0,
+      'dinner': 0.0,
+      'snack': 0.0,
+    };
+
+    for (final food in foods) {
+      final key = food.mealType ?? 'snack';
+      if (mealTotals.containsKey(key)) {
+        mealTotals[key] = mealTotals[key]! + food.calories;
+      }
+    }
+
+    final breakfastGoal = (calorieGoal * 0.30).round();
+    final lunchGoal = (calorieGoal * 0.30).round();
+    final dinnerGoal = (calorieGoal * 0.30).round();
+    final snackGoal = (calorieGoal * 0.10).round();
+
+    return [
+      {
+        'name': 'Frühstück',
+        'icon': '🥐',
+        'mealType': 'breakfast',
+        'calories': mealTotals['breakfast']!.round(),
+        'goal': breakfastGoal,
+      },
+      {
+        'name': 'Mittagessen',
+        'icon': '🍽️',
+        'mealType': 'lunch',
+        'calories': mealTotals['lunch']!.round(),
+        'goal': lunchGoal,
+      },
+      {
+        'name': 'Abendessen',
+        'icon': '🍱',
+        'mealType': 'dinner',
+        'calories': mealTotals['dinner']!.round(),
+        'goal': dinnerGoal,
+      },
+      {
+        'name': 'Snacks',
+        'icon': '🍎',
+        'mealType': 'snack',
+        'calories': mealTotals['snack']!.round(),
+        'goal': snackGoal,
+      },
+    ];
+  }
+
+  Future<void> _persistGoals(
+    String userId,
+    int calorieGoal,
+    Map<String, double> macroGoals,
+  ) async {
+    if (_goalsPersisted) return;
+    _goalsPersisted = true;
+    try {
+      await _firestoreService.saveUserProfile(userId, {
+        'dailyCalorieGoal': calorieGoal,
+        'macroGoals': {
+          'protein': macroGoals['protein'],
+          'fat': macroGoals['fat'],
+          'carbs': macroGoals['carbs'],
+          'fiber': macroGoals['fiber'],
+        },
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      _goalsPersisted = false;
+    }
+  }
+
+  Widget _buildProfileMissingBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber, color: Colors.orange),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Bitte Ziele & Körperdaten einstellen, damit Kalorien berechnet werden.',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+            child: const Text('Jetzt'),
           ),
         ],
       ),
@@ -621,11 +784,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Column(
                 children: [
-                  _buildSettingItem(Icons.person, 'Profil bearbeiten'),
+                  _buildSettingItem(
+                    Icons.settings,
+                    'Einstellungen',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
                   const Divider(),
-                  _buildSettingItem(Icons.track_changes, 'Ziele anpassen'),
-                  const Divider(),
-                  _buildSettingItem(Icons.notifications, 'Benachrichtigungen'),
+                  _buildSettingItem(
+                    Icons.track_changes,
+                    'Ziele anpassen',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
                   const Divider(),
                   _buildSettingItem(Icons.help_outline, 'Hilfe & Support'),
                 ],
@@ -659,13 +832,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSettingItem(IconData icon, String title) {
+  Widget _buildSettingItem(IconData icon, String title, {VoidCallback? onTap}) {
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$title - Coming Soon!')),
-        );
-      },
+      onTap: onTap ??
+          () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$title - Coming Soon!')),
+            );
+          },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
@@ -679,16 +853,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year && date.month == now.month && date.day == now.day;
   }

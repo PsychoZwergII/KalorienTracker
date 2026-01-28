@@ -12,6 +12,9 @@ Activity _$ActivityFromJson(Map<String, dynamic> json) {
     customName: json['customName'] as String?,
     durationMinutes: json['durationMinutes'] as int,
     caloriesBurned: (json['caloriesBurned'] as num).toDouble(),
+    intensity: ActivityIntensity.values.firstWhere(
+      (e) => e.toString() == 'ActivityIntensity.${json['intensity'] ?? 'medium'}',
+    ),
     timestamp: DateTime.parse(json['timestamp'] as String),
     notes: json['notes'] as String?,
   );
@@ -24,6 +27,7 @@ Map<String, dynamic> _$ActivityToJson(Activity instance) => {
   'customName': instance.customName,
   'durationMinutes': instance.durationMinutes,
   'caloriesBurned': instance.caloriesBurned,
+  'intensity': instance.intensity.toString().split('.').last,
   'timestamp': instance.timestamp.toIso8601String(),
   'notes': instance.notes,
 };
