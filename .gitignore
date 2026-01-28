@@ -2,7 +2,8 @@
 # SECRETS & API KEYS (NEVER COMMIT!)
 # ============================================
 # Firebase Configuration Files (contain API keys)
-flutter_app/lib/firebase_options.dart
+# NOTE: firebase_options.dart MUST be committed for app to work!
+# (API Keys are rotatable in Firebase Console)
 flutter_app/android/app/google-services.json
 flutter_app/ios/Runner/GoogleService-Info.plist
 
