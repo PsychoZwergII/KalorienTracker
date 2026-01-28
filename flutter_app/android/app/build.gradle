@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.kalorientracker"
+    namespace "com.KalorienTracker"
     compileSdk 34
     ndkVersion "26.1.10909125"
 
@@ -42,7 +42,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.kalorientracker"
+        applicationId "com.KalorienTracker"
         minSdkVersion 21
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
