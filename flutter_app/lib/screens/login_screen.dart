@@ -23,19 +23,42 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _authService.signInWithGoogle();
       if (user != null && mounted) {
+        print('✅ Google Sign-In erfolgreich: ${user.email}');
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Google Sign-In cancelled')),
+            const SnackBar(content: Text('❌ Google Sign-In abgebrochen')),
           );
         }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String errorMsg = 'Fehler';
+        if (e.code == 'network-request-failed') {
+          errorMsg = 'Netzwerkfehler - Prüfen Sie die Internetverbindung';
+        } else if (e.code == 'operation-not-allowed') {
+          errorMsg = 'Google Sign-In ist nicht aktiviert';
+        } else {
+          errorMsg = 'Google Sign-In Fehler: ${e.message}';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+        print('❌ Google Sign-In Error: ${e.code} - ${e.message}');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text('Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
+        print('❌ Unerwarteter Fehler: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -48,7 +71,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        const SnackBar(
+          content: Text('❌ Bitte alle Felder ausfüllen'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Ungültige E-Mail-Adresse'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -58,19 +94,49 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _authService.signInWithEmail(email, password);
       if (user != null && mounted) {
+        print('✅ Email Sign-In erfolgreich: $email');
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid email or password')),
+            const SnackBar(
+              content: Text('❌ E-Mail oder Passwort ungültig'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String errorMsg = 'Fehler';
+        if (e.code == 'user-not-found') {
+          errorMsg = 'Benutzer nicht gefunden';
+        } else if (e.code == 'wrong-password') {
+          errorMsg = 'Falsches Passwort';
+        } else if (e.code == 'invalid-email') {
+          errorMsg = 'Ungültige E-Mail';
+        } else if (e.code == 'user-disabled') {
+          errorMsg = 'Benutzer deaktiviert';
+        } else {
+          errorMsg = 'Fehler: ${e.message}';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ $errorMsg'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        print('❌ Email Sign-In Error: ${e.code} - ${e.message}');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text('❌ Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
+        print('❌ Unerwarteter Fehler: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -82,6 +148,21 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleTestUser() async {
+    // Vorausgefüllte Test-Daten
+    setState(() {
+      _emailController.text = 'test@test.de';
+      _passwordController.text = 'TEST123';
+      _showEmailLogin = true;
+    });
+    
+    // Auto-login nach kurzer Verzögerung
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      await _handleEmailSignIn();
+    }
   }
 
   @override
@@ -108,10 +189,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo / App Name
-                    Icon(
-                      Icons.apple,
-                      size: 80,
-                      color: Colors.white,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.restaurant_menu,
+                        size: 80,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -189,6 +277,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white.withOpacity(0.9),
                           foregroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Demo/Test Button
+                      OutlinedButton.icon(
+                        onPressed: () => _handleTestUser(),
+                        icon: const Icon(Icons.bug_report),
+                        label: const Text('Test User: TEST / TEST123'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white30),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 32,
                             vertical: 16,
@@ -289,7 +398,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "Don't have an account? ",
+                            "Kein Konto? ",
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: Colors.white70,
                                 ),
@@ -297,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           GestureDetector(
                             onTap: () => Navigator.of(context).pushNamed('/signup'),
                             child: Text(
-                              'Sign Up',
+                              'Registrieren',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -306,6 +415,21 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Back Button
+                      OutlinedButton(
+                        onPressed: () => setState(() => _showEmailLogin = false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white30),
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('← Zurück'),
                       ),
                       const SizedBox(height: 24),
 
