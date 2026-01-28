@@ -12,15 +12,31 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    // Prüfe ob Firebase bereits initialisiert ist
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print('✅ Firebase initialized successfully');
-    } else {
-      print('✅ Firebase already initialized');
+    // Robuste Firebase Initialisierung mit mehreren Checks
+    FirebaseApp? app;
+    
+    try {
+      // Versuche zuerst die Default App zu holen
+      app = Firebase.app();
+      print('✅ Firebase already initialized (found existing app)');
+    } catch (e) {
+      // Wenn keine App existiert, initialisiere neu
+      try {
+        app = await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        print('✅ Firebase initialized successfully (new app created)');
+      } catch (initError) {
+        // Falls Initialisierung fehlschlägt, aber App existiert, hole sie
+        if (initError.toString().contains('duplicate-app')) {
+          app = Firebase.app();
+          print('✅ Firebase already initialized (caught duplicate)');
+        } else {
+          rethrow;
+        }
+      }
     }
+    
     runApp(
       ChangeNotifierProvider(
         create: (_) => ThemeProvider(),
