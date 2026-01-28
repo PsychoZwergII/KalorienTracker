@@ -1,3 +1,5 @@
+# In Entwicklung
+
 # 🥗 KalorienTracker
 
 **AI-powered Multi-User Calorie Tracker für Android & iOS - Komplett kostenlos ($0/Monat)**
