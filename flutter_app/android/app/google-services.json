@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "548167696657",
+    "project_id": "kalorientracker-3390e",
+    "storage_bucket": "kalorientracker-3390e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548167696657:android:ab96913a73cf6d2f654cb0",
+        "android_client_info": {
+          "package_name": "com.KalorienTracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMEfdVZjwaNVCgUWeuTo4X6f5-sHB__to"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
