@@ -17,6 +17,57 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  Future<void> _handleTestUserLogin() async {
+    const testEmail = 'test@test.com';
+    const testPassword = 'test123';
+    const testName = 'Test User';
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      // Versuche erst Login
+      var user = await _authService.signInWithEmail(testEmail, testPassword);
+      
+      // Falls User nicht existiert, erstelle ihn
+      if (user == null) {
+        print('🔨 Test User existiert nicht - erstelle neuen User...');
+        user = await _authService.createAccountWithEmail(testEmail, testPassword, testName);
+      }
+      
+      if (user != null && mounted) {
+        print('✅ Test User Login erfolgreich: ${user.email}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Test User Login erfolgreich'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Test User konnte nicht erstellt werden'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Test User Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        print('❌ Test User Error: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
     
@@ -415,6 +466,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Test User Login
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _handleTestUserLogin,
+                        icon: const Icon(Icons.science, size: 18),
+                        label: const Text('Test User Login (Auto-Register)'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white30),
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       

@@ -12,7 +12,20 @@
           "package_name": "com.KalorienTracker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "548167696657-aefstrhabt244k7elq5d9dkl01et9ddn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.KalorienTracker",
+            "certificate_hash": "989dfd744fc4e7d5ce59a7e4e616392eb9778420"
+          }
+        },
+        {
+          "client_id": "548167696657-v8nkf90ckne01surcnmpqcp1g7jspiql.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAMEfdVZjwaNVCgUWeuTo4X6f5-sHB__to"
@@ -20,11 +33,15 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "548167696657-v8nkf90ckne01surcnmpqcp1g7jspiql.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
   ],
   "configuration_version": "1"
 }
-
