@@ -105,33 +105,3 @@ jobs:
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
             flutter_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 30
-
-      - name: Create Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Release v1.0.${{ github.run_number }}
-          files: flutter_app/build/app/outputs/flutter-apk/app-release.apk
-          body: |
-            ## KalorienTracker v1.0.${{ github.run_number }}
-
-            ### Features:
-            - Google Sign-In & Email/Password Authentication
-            - AI Food Analysis (Gemini)
-            - Barcode Scanner
-            - Daily Calorie Tracking
-            - Favorites Management
-
-            ### Installation:
-            1. Download `app-release.apk`
-            2. Enable "Install from unknown sources"
-            3. Install APK on your phone
-            4. Open app and sign in
-
-            ### Requirements:
-            - Android 5.0+ (API Level 21+)
-            - Internet connection
-            - Google Play Services
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
