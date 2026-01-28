@@ -80,6 +80,11 @@ jobs:
           cd flutter_app
           flutter pub get
 
+      - name: Generate code
+        run: |
+          cd flutter_app
+          flutter pub run build_runner build --delete-conflicting-outputs
+
       - name: Build APK (Debug)
         if: github.event_name == 'pull_request'
         run: |
