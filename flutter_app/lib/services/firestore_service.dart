@@ -267,7 +267,7 @@ class FirestoreService {
   Future<double> getTotalCaloriesBurnedByDate(String userId, DateTime date) async {
     try {
       final activities = await getActivitiesByDate(userId, date);
-      return activities.fold(0.0, (sum, activity) => sum + activity.caloriesBurned);
+      return activities.fold<double>(0.0, (sum, activity) => sum + activity.caloriesBurned);
     } catch (e) {
       print('Get Total Calories Burned Error: $e');
       return 0;
