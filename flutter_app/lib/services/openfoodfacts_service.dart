@@ -53,106 +53,111 @@ class OpenFoodFactsService {
     }
   }
   
-  /// Search for products by name or query (BLV API - mit MyMemory Übersetzung)
+  /// Search for products by name or query (BLV API)
   Future<List<FoodItem>> searchProducts(String query) async {
     if (query.trim().isEmpty) return [];
     
     try {
-      // Übersetzung: Deutsch -> Englisch via MyMemory API
-      final englishQuery = await _translateText(query, 'de', 'en');
-      print('🔍 BLV API Search: "$query" → "$englishQuery"');
+      // Try both German and English searches
+      final String searchQuery = query.toLowerCase();
+      final isGerman = _isGermanWord(searchQuery);
       
-      // BLV API Food Search Endpoint - correct endpoint is /foods with 'search' parameter
+      String englishQuery = searchQuery;
+      if (isGerman) {
+        englishQuery = await _translateText(searchQuery, 'de', 'en');
+      }
+      
+      print('🔍 Search: "$query" (German: $isGerman) → English: "$englishQuery"');
+      
+      // Call BLV API
       final url = Uri.parse('$_blvApiUrl/foods')
           .replace(queryParameters: {
             'search': englishQuery,
-            'limit': '20',
+            'limit': '30',
             'lang': 'en',
           });
       
-      print('📡 BLV API URL: $url');
+      print('📡 Calling: $url');
       
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as List<dynamic>?;
-        
-        if (json == null || json.isEmpty) {
-          print('⚠️ BLV API: Empty response');
-          return [];
-        }
-        
-        print('📦 BLV API returned ${json.length} results');
-
-        // Parse foods with translation
-        final List<FoodItem> results = [];
-        for (final foodMap in json.whereType<Map<String, dynamic>>()) {
-          try {
-            final item = await _parseBLVFood(foodMap);
-            if (item != null) {
-              results.add(item);
-            }
-          } catch (e) {
-            print('⚠️ Error parsing individual BLV food: $e');
-            continue;
-          }
-        }
-        
-        print('✅ Successfully parsed ${results.length} BLV products');
-        return results;
-      } else if (response.statusCode == 404) {
-        print('⚠️ BLV API: No results found for "$englishQuery"');
-        return [];
-      } else {
-        print('⚠️ BLV API returned ${response.statusCode}');
-        print('📝 Response: ${response.body}');
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
+      
+      if (response.statusCode != 200) {
+        print('❌ API returned ${response.statusCode}');
         return [];
       }
+      
+      final jsonData = jsonDecode(response.body);
+      
+      // BLV returns a direct List
+      final foods = (jsonData is List ? jsonData : []) as List<dynamic>;
+      
+      print('📊 Got ${foods.length} results');
+      
+      if (foods.isEmpty) {
+        return [];
+      }
+      
+      // Parse each food item (max 15 to avoid too many API calls)
+      final List<FoodItem> results = [];
+      for (int i = 0; i < foods.length && i < 15; i++) {
+        try {
+          final item = await _parseBLVFood(foods[i] as Map<String, dynamic>);
+          if (item != null) {
+            results.add(item);
+          }
+        } catch (e) {
+          print('⚠️ Parse error at $i: $e');
+        }
+      }
+      
+      print('✅ Created ${results.length} items');
+      return results;
     } catch (e) {
-      print('❌ BLV API Error: $e');
+      print('❌ Search error: $e');
       return [];
     }
   }
   
-  /// Parse BLV Food data to FoodItem (mit MyMemory Rückübersetzung + Nährwerte)
-  /// BLV API returns: {id, generic, names: [{id, term}], synonyms, categories}
+  /// Check if word looks German
+  bool _isGermanWord(String word) {
+    final germanWords = {
+      'apfel', 'kartoffel', 'brot', 'käse', 'milch', 'butter', 'ei', 'fleisch',
+      'huhn', 'fisch', 'salat', 'tomate', 'zwiebel', 'knoblauch', 'paprika',
+      'nudel', 'reis', 'bohne', 'linse', 'erbse', 'möhre', 'karotte',
+    };
+    return germanWords.contains(word);
+  }
+  
+  /// Parse BLV Food data to FoodItem
   Future<FoodItem?> _parseBLVFood(Map<String, dynamic> food) async {
     try {
       final foodId = food['id']?.toString();
       if (foodId == null || foodId.isEmpty) {
-        print('⚠️ BLV: No food ID');
         return null;
       }
 
-      // BLV returns names in an array
-      final names = food['names'] as List<dynamic>? ?? [];
-      String? name;
-      
-      if (names.isNotEmpty) {
-        final firstName = names.first as Map<String, dynamic>?;
-        name = firstName?['term'] as String?;
-      }
-      
-      if (name == null || name.isEmpty) {
-        print('⚠️ BLV: No food name found');
+      // BLV search response uses 'foodName' directly (not in array)
+      final name = food['foodName'] as String? ?? food['name'] as String? ?? '';
+      if (name.isEmpty) {
         return null;
       }
 
-      // Rückübersetzung: Englisch -> Deutsch via MyMemory API
-      final germanLabel = await _translateText(name, 'en', 'de');
+      print('🔄 Parsing: $name (ID: $foodId)');
 
       // Fetch detailed nutrition data
       final nutrients = await _fetchFoodNutrients(foodId);
       
-      // Skip if no useful nutrition data
+      // Skip if no calories found
       if (nutrients['calories']! <= 0) {
-        print('⚠️ BLV: No nutrition data for "$germanLabel"');
+        print('⚠️ No calories for "$name"');
         return null;
       }
 
+      print('✅ Created: $name - ${nutrients['calories']!.toStringAsFixed(1)} kcal');
+
       return FoodItem(
         id: foodId,
-        label: germanLabel,
+        label: name,
         calories: nutrients['calories']!,
         protein: nutrients['protein']!,
         fat: nutrients['fat']!,
@@ -163,11 +168,10 @@ class OpenFoodFactsService {
         mealType: 'snack',
       );
     } catch (e) {
-      print('❌ Error parsing BLV food: $e');
+      print('❌ Parse error: $e');
       return null;
     }
   }
-
   
   /// Fetch detailed nutrition data for a specific food by ID
   Future<Map<String, double>> _fetchFoodNutrients(String foodId) async {
@@ -194,7 +198,7 @@ class OpenFoodFactsService {
         'fiber': 0.0,
       };
     } catch (e) {
-      print('⚠️ Error fetching food nutrients: $e');
+      print('⚠️ Error fetching nutrients for $foodId: $e');
       return {
         'calories': 0.0,
         'protein': 0.0,
@@ -221,21 +225,27 @@ class OpenFoodFactsService {
       for (final valueMap in values.whereType<Map<String, dynamic>>()) {
         final component = valueMap['component'] as Map<String, dynamic>?;
         final componentName = component?['name']?.toString().toLowerCase() ?? '';
-        final value = valueMap['value'];
-        final doubleValue = _convertToDouble(value);
+        final value = _convertToDouble(valueMap['value']);
         
         // Map BLV component names to our nutrition fields
-        if (componentName.contains('energy') || componentName.contains('kcal')) {
-          nutrients['calories'] = doubleValue;
-        } else if (componentName.contains('protein')) {
-          nutrients['protein'] = doubleValue;
-        } else if (componentName.contains('fat') || componentName.contains('lipid')) {
-          nutrients['fat'] = doubleValue;
+        if (componentName.contains('energy') && componentName.contains('kilocalorie')) {
+          // Prefer kilocalories (kcal)
+          nutrients['calories'] = value;
+        } else if (componentName == 'protein') {
+          nutrients['protein'] = value;
         } else if (componentName.contains('carbohydrate')) {
-          nutrients['carbs'] = doubleValue;
-        } else if (componentName.contains('fiber') || componentName.contains('fibre')) {
-          nutrients['fiber'] = doubleValue;
+          nutrients['carbs'] = value;
+        } else if (componentName == 'fibre' || componentName == 'fiber') {
+          nutrients['fiber'] = value;
+        } else if (componentName.contains('fatty acid')) {
+          // Sum all fatty acids
+          nutrients['fat'] = (nutrients['fat'] ?? 0.0) + value;
         }
+      }
+      
+      // If no fat extracted, set to 0
+      if (nutrients['fat'] == null) {
+        nutrients['fat'] = 0.0;
       }
       
       return nutrients;
@@ -251,7 +261,22 @@ class OpenFoodFactsService {
     }
   }
   
-  
+  /// Helper to safely convert values to double
+  double _convertToDouble(dynamic value) {
+    try {
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        final parsed = double.tryParse(value);
+        return parsed ?? 0.0;
+      }
+      return 0.0;
+    } catch (e) {
+      print('⚠️ Error converting $value to double: $e');
+      return 0.0;
+    }
+  }
+
   /// Get product by barcode (FoodRepo)
   Future<FoodItem?> getProductByBarcode(String barcode) async {
     print('🔍 FoodRepo Barcode Search: $barcode');
@@ -314,7 +339,6 @@ class OpenFoodFactsService {
       final nutrients = data['nutrients'] as Map<String, dynamic>? ?? {};
       
       // FoodRepo Nährwerte (pro 100g)
-      // Energy kann in kcal, kJ, oder energy_kcal sein
       final energyValue = nutrients['energy'] ?? 
                          nutrients['energy_kcal'] ?? 
                          nutrients['energyKcal'] ?? 
@@ -352,22 +376,6 @@ class OpenFoodFactsService {
     } catch (e) {
       print('❌ Error parsing FoodRepo product: $e');
       return null;
-    }
-  }
-  
-  /// Helper to safely convert values to double
-  double _convertToDouble(dynamic value) {
-    try {
-      if (value is double) return value;
-      if (value is int) return value.toDouble();
-      if (value is String) {
-        final parsed = double.tryParse(value);
-        return parsed ?? 0.0;
-      }
-      return 0.0;
-    } catch (e) {
-      print('⚠️ Error converting $value to double: $e');
-      return 0.0;
     }
   }
 }
