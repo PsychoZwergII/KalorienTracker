@@ -32,7 +32,7 @@ dependencies:
 
   # Camera & Image
   image_picker: ^1.0.0
-  mobile_scanner: ^5.2.0
+  mobile_scanner: ^5.1.1
   camera: ^0.10.5
   google_mlkit_barcode_scanning: ^0.10.0
   image: ^4.0.0
