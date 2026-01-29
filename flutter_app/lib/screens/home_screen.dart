@@ -469,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
             foods: mealFoods,
             userId: widget.user.uid,
           );
-        }),
+        }).toList(),
         
         const SizedBox(height: 16),
         
