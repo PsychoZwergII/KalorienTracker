@@ -34,7 +34,10 @@ class OpenFoodFactsService {
         final json = jsonDecode(response.body) as Map<String, dynamic>?;
         
         if (json != null) {
-          final translatedText = json['responseData']?['translatedText'] as String? ?? text;
+          var translatedText = json['responseData']?['translatedText'] as String? ?? text;
+          
+          // Remove HTML tags that sometimes appear in translations (e.g., <g id="1">p</g>otato)
+          translatedText = translatedText.replaceAll(RegExp(r'<[^>]+>'), '');
           
           // Cache the result
           _translationCache[cacheKey] = translatedText;
