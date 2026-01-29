@@ -150,15 +150,20 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
     setState(() => _isSearching = true);
 
     try {
+      print('🔍 Manual Food Search started for: "$query"');
+      
       final results = await _openFoodFactsService.searchProducts(query);
       if (!mounted) return;
 
+      print('✅ Search returned ${results.length} results');
+      
       setState(() {
         _searchResults = results;
         _showSearchResults = true;
       });
       _showOverlay();
     } catch (e) {
+      print('❌ Search error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Suche fehlgeschlagen: $e')),
@@ -267,9 +272,19 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
     }
 
     if (_searchResults.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Text('Keine Ergebnisse gefunden.'),
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('❌ Keine Ergebnisse gefunden'),
+            const SizedBox(height: 8),
+            Text(
+              'Versuchen Sie einen anderen Suchbegriff',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       );
     }
 
