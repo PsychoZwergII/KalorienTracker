@@ -25,23 +25,62 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final confirmPassword = _confirmPasswordController.text;
 
     // Validation
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        const SnackBar(
+          content: Text('❌ Bitte Namen eingeben'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
-    if (password != confirmPassword) {
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
+        const SnackBar(
+          content: Text('❌ Bitte E-Mail eingeben'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Ungültige E-Mail-Adresse'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Bitte Passwort eingeben'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (password.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 6 characters')),
+        const SnackBar(
+          content: Text('❌ Passwort muss mindestens 6 Zeichen haben'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Passwörter stimmen nicht überein'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -51,35 +90,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
     try {
       final user = await _authService.createAccountWithEmail(email, password, name);
       if (user != null && mounted) {
+        print('✅ Account erstellt: ${user.email}');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created successfully!')),
+          const SnackBar(
+            content: Text('✅ Account erfolgreich erstellt!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to create account')),
+            const SnackBar(
+              content: Text('❌ Account konnte nicht erstellt werden'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
     } on FirebaseAuthException catch (e) {
-      String message = 'Error creating account';
+      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
+      String message = 'Fehler beim Erstellen des Accounts';
       if (e.code == 'weak-password') {
-        message = 'Password is too weak';
+        message = 'Passwort ist zu schwach (mindestens 6 Zeichen)';
       } else if (e.code == 'email-already-in-use') {
-        message = 'Email already in use';
+        message = 'E-Mail wird bereits verwendet';
       } else if (e.code == 'invalid-email') {
-        message = 'Invalid email address';
+        message = 'Ungültige E-Mail-Adresse';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'E-Mail/Passwort-Anmeldung ist nicht aktiviert';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Netzwerkfehler - Prüfen Sie die Internetverbindung';
+      } else {
+        message = 'Fehler [${e.code}]: ${e.message}';
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
+          SnackBar(
+            content: Text('❌ $message'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } catch (e) {
+      print('❌ Unerwarteter Fehler: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text('❌ Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

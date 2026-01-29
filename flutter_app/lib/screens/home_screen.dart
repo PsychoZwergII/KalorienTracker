@@ -31,6 +31,39 @@ class _HomeScreenState extends State<HomeScreen> {
   // Kalorienziele und aktuelle Werte
   int _calorieGoal = 2256;
   bool _goalsPersisted = false;
+  final Map<String, bool> _expandedMeals = {};
+  
+  // Cached User Profile
+  UserProfile? _cachedProfile;
+  bool _profileLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await _firestoreService.getUserProfile(widget.user.uid);
+      if (mounted) {
+        setState(() {
+          _cachedProfile = profile;
+          _profileLoaded = true;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading profile: $e');
+      if (mounted) {
+        setState(() => _profileLoaded = true);
+      }
+    }
+  }
+
+  void _refreshProfile() {
+    _loadUserProfile();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -72,19 +105,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCoachTab() {
     final userId = widget.user.uid;
+    final profile = _cachedProfile;
+    final calorieGoal = _calculateCalorieGoal(profile);
+    final macroGoals = _calculateMacroGoals(calorieGoal);
 
-    return StreamBuilder<UserProfile?>(
-      stream: _firestoreService.streamUserProfile(userId),
-      builder: (context, profileSnapshot) {
-        final profile = profileSnapshot.data;
-        final calorieGoal = _calculateCalorieGoal(profile);
-        final macroGoals = _calculateMacroGoals(calorieGoal);
+    if (!_goalsPersisted && profile != null && calorieGoal > 0) {
+      _persistGoals(userId, calorieGoal, macroGoals);
+    }
 
-        if (!_goalsPersisted && profile != null && calorieGoal > 0) {
-          _persistGoals(userId, calorieGoal, macroGoals);
-        }
+    if (!_profileLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        return StreamBuilder<List<FoodItem>>(
+    return StreamBuilder<List<FoodItem>>(
+      stream: _firestoreService.getTodaysFoods(userId),
+      builder: (context, foodSnapshot) {
+        final foods = foodSnapshot.data ?? [];
+        final foodTotals = _calculateFoodTotals(foods);
+        final meals = _buildMealsFromFoods(foods, calorieGoal);
+
+        return StreamBuilder<List<Activity>>(
+          stream: _firestoreService.getTodaysActivities(userId),
+          builder: (context, activitySnapshot) {
+            final activities = activitySnapshot.data ?? [];
+            final caloriesBurned = activities.fold<int>(
           stream: _firestoreService.getTodaysFoods(userId),
           builder: (context, foodSnapshot) {
             final foods = foodSnapshot.data ?? [];
@@ -301,6 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           meals: meals,
                           caloriesBurned: caloriesBurned,
                           userProfile: profile,
+                          allFoods: foods,
                         ),
                       ),
                     ),
@@ -366,37 +411,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProgressTab() {
-    return StreamBuilder<UserProfile?>(
-      stream: _firestoreService.streamUserProfile(widget.user.uid),
-      builder: (context, profileSnapshot) {
-        return StreamBuilder<List<WeightLog>>(
-          stream: _firestoreService.streamWeightLogs(widget.user.uid, limit: 90),
-          builder: (context, weightSnapshot) {
-            final profile = profileSnapshot.data;
-            final logs = weightSnapshot.data ?? [];
+    final profile = _cachedProfile;
+    
+    if (!_profileLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 40, 16, 24),
-              children: [
-                const Text(
-                  'Fortschritt',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C3E50),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (profile == null)
-                  _buildProfileMissingBanner(),
-                const SizedBox(height: 16),
-                WeightProgressChart(
-                  weightLogs: logs,
-                  userProfile: profile,
-                ),
-              ],
-            );
-          },
+    return StreamBuilder<List<WeightLog>>(
+      stream: _firestoreService.streamWeightLogs(widget.user.uid, limit: 90),
+      builder: (context, weightSnapshot) {
+        final logs = weightSnapshot.data ?? [];
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 40, 16, 24),
+          children: [
+            const Text(
+              'Fortschritt',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (profile == null)
+              _buildProfileMissingBanner(),
+            const SizedBox(height: 16),
+            WeightProgressChart(
+              weightLogs: logs,
+              userProfile: profile,
+            ),
+          ],
         );
       },
     );
@@ -406,17 +451,25 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<Map<String, dynamic>> meals,
     required int caloriesBurned,
     required UserProfile? userProfile,
+    required List<FoodItem> allFoods,
   }) {
     return Column(
       children: [
         // Mahlzeiten
-        ...meals.map((meal) => _buildMealCard(
-          meal['name'],
-          meal['icon'],
-          meal['mealType'],
-          meal['calories'],
-          meal['goal'],
-        )),
+        ...meals.map((meal) {
+          final mealFoods = allFoods
+              .where((f) => f.mealType == meal['mealType'])
+              .toList();
+          return _buildMealCard(
+            meal['name'],
+            meal['icon'],
+            meal['mealType'],
+            meal['calories'],
+            meal['goal'],
+            foods: mealFoods,
+            userId: widget.user.uid,
+          );
+        }),
         
         const SizedBox(height: 16),
         
@@ -504,78 +557,197 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMealCard(String name, String icon, String mealType, int calories, int goal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                icon,
-                style: const TextStyle(fontSize: 28),
+  Widget _buildMealCard(
+    String name,
+    String icon,
+    String mealType,
+    int calories,
+    int goal, {
+    required List<FoodItem> foods,
+    required String userId,
+  }) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        final isExpanded = _expandedMeals[mealType] ?? false;
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              // Header
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _expandedMeals[mealType] = !isExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            icon,
+                            style: const TextStyle(fontSize: 28),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$calories / $goal kcal',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2C3E50),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => MealAddScreen(
+                                  mealName: name,
+                                  mealType: mealType,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        isExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Colors.grey.shade600,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$calories / $goal kcal',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C3E50),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.add, color: Colors.white, size: 20),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => MealAddScreen(
-                      mealName: name,
-                      mealType: mealType,
+              
+              // Expanded content - food items
+              if (isExpanded)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200),
                     ),
                   ),
-                );
-              },
-            ),
+                  child: foods.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Keine Mahlzeiten hinzugefügt',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: foods.length,
+                        itemBuilder: (context, index) {
+                          final food = foods[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              border: index < foods.length - 1
+                                ? Border(
+                                    bottom: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
+                                  )
+                                : null,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          food.label,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xFF2C3E50),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${food.calories.toStringAsFixed(0)} kcal',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    onPressed: () async {
+                                      await _firestoreService
+                                        .deleteFoodItem(userId, food.id);
+                                      setState(() {});
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -787,17 +959,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildSettingItem(
                     Icons.settings,
                     'Einstellungen',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                    ),
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                      // Refresh profile after settings
+                      _refreshProfile();
+                    },
                   ),
                   const Divider(),
                   _buildSettingItem(
                     Icons.track_changes,
                     'Ziele anpassen',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                    ),
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                      // Refresh profile after settings
+                      _refreshProfile();
+                    },
                   ),
                   const Divider(),
                   _buildSettingItem(Icons.help_outline, 'Hilfe & Support'),

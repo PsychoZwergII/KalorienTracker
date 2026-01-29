@@ -120,10 +120,20 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ Bitte alle Felder ausfüllen'),
+          content: Text('❌ Bitte E-Mail eingeben'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Bitte Passwort eingeben'),
           backgroundColor: Colors.red,
         ),
       );
@@ -158,28 +168,36 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
       if (mounted) {
         String errorMsg = 'Fehler';
         if (e.code == 'user-not-found') {
-          errorMsg = 'Benutzer nicht gefunden';
+          errorMsg = 'Benutzer nicht gefunden - Bitte registrieren';
         } else if (e.code == 'wrong-password') {
           errorMsg = 'Falsches Passwort';
         } else if (e.code == 'invalid-email') {
-          errorMsg = 'Ungültige E-Mail';
+          errorMsg = 'Ungültige E-Mail-Adresse';
         } else if (e.code == 'user-disabled') {
-          errorMsg = 'Benutzer deaktiviert';
+          errorMsg = 'Benutzer wurde deaktiviert';
+        } else if (e.code == 'invalid-credential') {
+          errorMsg = 'Ungültige Anmeldedaten';
+        } else if (e.code == 'network-request-failed') {
+          errorMsg = 'Netzwerkfehler - Prüfen Sie die Internetverbindung';
+        } else if (e.code == 'too-many-requests') {
+          errorMsg = 'Zu viele Versuche - Bitte später erneut versuchen';
         } else {
-          errorMsg = 'Fehler: ${e.message}';
+          errorMsg = 'Fehler [${e.code}]: ${e.message}';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ $errorMsg'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
-        print('❌ Email Sign-In Error: ${e.code} - ${e.message}');
       }
     } catch (e) {
+      print('❌ Unerwarteter Fehler: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -187,7 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: Colors.red,
           ),
         );
-        print('❌ Unerwarteter Fehler: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

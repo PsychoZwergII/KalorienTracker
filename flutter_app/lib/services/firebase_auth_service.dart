@@ -18,7 +18,10 @@ class FirebaseAuthService {
   Future<User?> signInWithGoogle() async {
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (googleUser == null) {
+        print('ℹ️ Google Sign-In cancelled by user');
+        return null; // User cancelled, not an error
+      }
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -27,10 +30,14 @@ class FirebaseAuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
+      print('✅ Google Sign-In successful: ${userCredential.user?.email}');
       return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
+      rethrow;
     } catch (e) {
-      print('Google Sign-In Error: $e');
-      return null;
+      print('❌ Google Sign-In Error: $e');
+      rethrow;
     }
   }
 
@@ -43,15 +50,11 @@ class FirebaseAuthService {
       );
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        print('No user found with this email');
-      } else if (e.code == 'wrong-password') {
-        print('Wrong password');
-      }
-      return null;
+      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
+      rethrow; // Throw the exception so UI can handle it
     } catch (e) {
-      print('Sign In Error: $e');
-      return null;
+      print('❌ Sign In Error: $e');
+      rethrow;
     }
   }
 
@@ -69,15 +72,11 @@ class FirebaseAuthService {
       
       return _auth.currentUser;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        print('Password is too weak');
-      } else if (e.code == 'email-already-in-use') {
-        print('Email already in use');
-      }
-      return null;
+      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
+      rethrow; // Throw the exception so UI can handle it
     } catch (e) {
-      print('Create Account Error: $e');
-      return null;
+      print('❌ Create Account Error: $e');
+      rethrow;
     }
   }
 

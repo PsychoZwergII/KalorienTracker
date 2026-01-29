@@ -40,20 +40,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
-    try {
-      final image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        await _analyzeImage(image);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
-  }
 
   Future<void> _analyzeImage(XFile image) async {
     setState(() => _isLoading = true);
@@ -144,15 +130,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 onPressed: _isLoading ? null : _captureImage,
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('Take Photo'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _pickImage,
-                icon: const Icon(Icons.photo_library),
-                label: const Text('Choose from Gallery'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

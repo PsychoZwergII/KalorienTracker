@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/food_item.dart';
 import '../models/nutrients.dart';
 import '../services/cloud_function_service.dart';
@@ -18,8 +16,7 @@ class BarcodeScanScreen extends StatefulWidget {
 }
 
 class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
-  final _picker = ImagePicker();
-  final _barcodeScanner = BarcodeScanner();
+  final MobileScannerController _scannerController = MobileScannerController();
   final _cloudService = CloudFunctionService();
   final _authService = FirebaseAuthService();
   final _firestoreService = FirestoreService();
@@ -27,50 +24,25 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
   bool _isLoading = false;
   String? _barcode;
   Nutrients? _result;
-  File? _imageFile;
+  bool _hasScanned = false;
 
   @override
   void dispose() {
-    _barcodeScanner.close();
+    _scannerController.dispose();
     super.dispose();
   }
 
-  Future<void> _scanBarcode() async {
-    final image = await _picker.pickImage(source: ImageSource.camera);
-    if (image == null) return;
+  Future<void> _handleBarcode(String rawValue) async {
+    if (_hasScanned) return;
+    _hasScanned = true;
 
     setState(() {
       _isLoading = true;
-      _imageFile = File(image.path);
-      _barcode = null;
+      _barcode = rawValue;
       _result = null;
     });
 
     try {
-      final inputImage = InputImage.fromFilePath(image.path);
-      final barcodes = await _barcodeScanner.processImage(inputImage);
-
-      if (barcodes.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ Kein Barcode gefunden')),
-          );
-        }
-        return;
-      }
-
-      final rawValue = barcodes.first.rawValue;
-      if (rawValue == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ Barcode ungültig')),
-          );
-        }
-        return;
-      }
-
-      _barcode = rawValue;
-
       final idToken = await _authService.getIdToken();
       if (idToken == null) throw Exception('Nicht angemeldet');
 
@@ -93,6 +65,15 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _resetScan() {
+    setState(() {
+      _hasScanned = false;
+      _barcode = null;
+      _result = null;
+    });
+    _scannerController.start();
   }
 
   Future<void> _saveFood() async {
@@ -141,17 +122,52 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            if (_imageFile != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(_imageFile!, height: 200, fit: BoxFit.cover),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 220,
+                child: Stack(
+                  children: [
+                    MobileScanner(
+                      controller: _scannerController,
+                      onDetect: (capture) {
+                        if (capture.barcodes.isEmpty) return;
+                        final barcode = capture.barcodes.first;
+                        final rawValue = barcode.rawValue;
+                        if (rawValue != null && rawValue.isNotEmpty) {
+                          _scannerController.stop();
+                          _handleBarcode(rawValue);
+                        }
+                      },
+                    ),
+                    if (_isLoading)
+                      Container(
+                        color: Colors.black.withOpacity(0.4),
+                        child: const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _scanBarcode,
-              icon: const Icon(Icons.qr_code_scanner),
-              label: Text(_isLoading ? 'Scanne...' : 'Barcode scannen'),
             ),
+            const SizedBox(height: 12),
+            Text(
+              _hasScanned
+                  ? 'Gefunden: ${_barcode ?? ''}'
+                  : 'Richte den Barcode in den Rahmen aus',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 12),
+            if (_hasScanned)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _resetScan,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Neu scannen'),
+                ),
+              ),
             const SizedBox(height: 16),
             if (_result != null)
               Card(
