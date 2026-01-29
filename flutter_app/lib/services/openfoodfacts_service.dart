@@ -101,7 +101,7 @@ class OpenFoodFactsService {
       final List<FoodItem> results = [];
       for (int i = 0; i < foods.length && i < 15; i++) {
         try {
-          final item = await _parseBLVFood(foods[i] as Map<String, dynamic>);
+          final item = await _parseBLVFood(foods[i] as Map<String, dynamic>, translateToGerman: isGerman);
           if (item != null) {
             results.add(item);
           }
@@ -129,7 +129,7 @@ class OpenFoodFactsService {
   }
   
   /// Parse BLV Food data to FoodItem
-  Future<FoodItem?> _parseBLVFood(Map<String, dynamic> food) async {
+  Future<FoodItem?> _parseBLVFood(Map<String, dynamic> food, {bool translateToGerman = false}) async {
     try {
       final foodId = food['id']?.toString();
       if (foodId == null || foodId.isEmpty) {
@@ -153,11 +153,13 @@ class OpenFoodFactsService {
         return null;
       }
 
-      print('✅ Created: $name - ${nutrients['calories']!.toStringAsFixed(1)} kcal');
+      // Translate food name to German only if original query was in German
+      final displayName = translateToGerman ? await _translateText(name, 'en', 'de') : name;
+      print('✅ Created: $displayName - ${nutrients['calories']!.toStringAsFixed(1)} kcal');
 
       return FoodItem(
         id: foodId,
-        label: name,
+        label: displayName,
         calories: nutrients['calories']!,
         protein: nutrients['protein']!,
         fat: nutrients['fat']!,

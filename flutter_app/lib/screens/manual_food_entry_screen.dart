@@ -114,10 +114,15 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
 
       await _firestoreService.addFoodItem(user.uid, foodItem);
 
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Lebensmittel gespeichert'), duration: Duration(seconds: 1)),
+      );
+      
+      // Navigate back after short delay to show snackbar
+      await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Lebensmittel gespeichert')),
-        );
         Navigator.of(context).pop();
       }
     } catch (e) {
