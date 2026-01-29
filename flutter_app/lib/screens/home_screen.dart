@@ -133,214 +133,212 @@ class _HomeScreenState extends State<HomeScreen> {
               (sum, activity) => sum + activity.caloriesBurned.round(),
             );
 
-                final caloriesConsumed = foodTotals['calories']?.round() ?? 0;
-                final caloriesRemaining = calorieGoal - caloriesConsumed + caloriesBurned;
+            final caloriesConsumed = foodTotals['calories']?.round() ?? 0;
+            final caloriesRemaining = calorieGoal - caloriesConsumed + caloriesBurned;
 
-                return CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Column(
-                        children: [
-                          // Kalorien-Übersicht Header
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0xFFE8F4F8), Colors.white],
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      // Kalorien-Übersicht Header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFFE8F4F8), Colors.white],
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            if (profile == null)
+                              _buildProfileMissingBanner(),
+
+                            const SizedBox(height: 8),
+
+                            // Hauptanzeige: Kalorien übrig
+                            Text(
+                              '$caloriesRemaining',
+                              style: const TextStyle(
+                                fontSize: 64,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50),
+                                height: 1,
                               ),
                             ),
-                            child: Column(
+                            const SizedBox(height: 4),
+                            const Text(
+                              'kcal',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'übrig',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            // Gegessen vs Verbrannt
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                if (profile == null)
-                                  _buildProfileMissingBanner(),
-
-                                const SizedBox(height: 8),
-
-                                // Hauptanzeige: Kalorien übrig
-                                Text(
-                                  '$caloriesRemaining',
-                                  style: const TextStyle(
-                                    fontSize: 64,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2C3E50),
-                                    height: 1,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'kcal',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  'übrig',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 30),
-
-                                // Gegessen vs Verbrannt
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                Column(
                                   children: [
-                                    Column(
-                                      children: [
-                                        Text(
-                                          '$caloriesConsumed',
-                                          style: const TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2C3E50),
-                                          ),
-                                        ),
-                                        const Text(
-                                          'Gegessen',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      '$caloriesConsumed',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2C3E50),
+                                      ),
                                     ),
-                                    Container(
-                                      width: 2,
-                                      height: 50,
-                                      color: Colors.grey.shade300,
-                                    ),
-                                    Column(
-                                      children: [
-                                        Text(
-                                          '$caloriesBurned',
-                                          style: const TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2C3E50),
-                                          ),
-                                        ),
-                                        const Text(
-                                          'Verbrannt',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
+                                    const Text(
+                                      'Gegessen',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Makronährstoffe Card
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 20),
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Makronährstoffe',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2C3E50),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
                                 Container(
-                                  height: 3,
-                                  width: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
+                                  width: 2,
+                                  height: 50,
+                                  color: Colors.grey.shade300,
                                 ),
-                                const SizedBox(height: 20),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                Column(
                                   children: [
-                                    _buildMacroCircle(
-                                      'Eiweiß',
-                                      foodTotals['protein'] ?? 0,
-                                      macroGoals['protein'] ?? 0,
-                                      Colors.pink.shade300,
+                                    Text(
+                                      '$caloriesBurned',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2C3E50),
+                                      ),
                                     ),
-                                    _buildMacroCircle(
-                                      'Fett',
-                                      foodTotals['fat'] ?? 0,
-                                      macroGoals['fat'] ?? 0,
-                                      Colors.amber.shade300,
-                                    ),
-                                    _buildMacroCircle(
-                                      'Kohlenh.',
-                                      foodTotals['carbs'] ?? 0,
-                                      macroGoals['carbs'] ?? 0,
-                                      Colors.blue.shade300,
-                                    ),
-                                    _buildMacroCircle(
-                                      'Ballastst.',
-                                      foodTotals['fiber'] ?? 0,
-                                      macroGoals['fiber'] ?? 0,
-                                      Colors.orange.shade300,
+                                    const Text(
+                                      'Verbrannt',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                          ),
-
-                          const SizedBox(height: 24),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
 
-                    // Mahlzeiten & Aktivitäten
-                    SliverToBoxAdapter(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-                        decoration: const BoxDecoration(
+                      const SizedBox(height: 24),
+
+                      // Makronährstoffe Card
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(30),
-                            topRight: Radius.circular(30),
-                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: _buildMealsAndActivities(
-                          meals: meals,
-                          caloriesBurned: caloriesBurned,
-                          userProfile: profile,
-                          allFoods: foods,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Makronährstoffe',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              height: 3,
+                              width: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildMacroCircle(
+                                  'Eiweiß',
+                                  foodTotals['protein'] ?? 0,
+                                  macroGoals['protein'] ?? 0,
+                                  Colors.pink.shade300,
+                                ),
+                                _buildMacroCircle(
+                                  'Fett',
+                                  foodTotals['fat'] ?? 0,
+                                  macroGoals['fat'] ?? 0,
+                                  Colors.amber.shade300,
+                                ),
+                                _buildMacroCircle(
+                                  'Kohlenh.',
+                                  foodTotals['carbs'] ?? 0,
+                                  macroGoals['carbs'] ?? 0,
+                                  Colors.blue.shade300,
+                                ),
+                                _buildMacroCircle(
+                                  'Ballastst.',
+                                  foodTotals['fiber'] ?? 0,
+                                  macroGoals['fiber'] ?? 0,
+                                  Colors.orange.shade300,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+
+                // Mahlzeiten & Aktivitäten
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
+                      ),
                     ),
-                  ],
-                );
-              },
+                    child: _buildMealsAndActivities(
+                      meals: meals,
+                      caloriesBurned: caloriesBurned,
+                      userProfile: profile,
+                      allFoods: foods,
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         );
