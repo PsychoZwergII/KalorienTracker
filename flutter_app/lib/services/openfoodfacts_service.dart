@@ -8,26 +8,33 @@ class OpenFoodFactsService {
   /// Search for products by name or query
   Future<List<FoodItem>> searchProducts(String query) async {
     try {
+      print('🔍 OpenFoodFacts Search: "$query"');
       final url = Uri.parse(
         '$_baseUrl/cgi/search.pl?search_terms=$query&page_size=20&action=process&json=1',
       );
 
+      print('📡 Request URL: $url');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         final products = json['products'] as List<dynamic>? ?? [];
+        print('✅ Found ${products.length} products');
 
-        return products
+        final results = products
             .whereType<Map<String, dynamic>>()
             .map((p) => _parseProductToFoodItem(p))
             .where((item) => item != null)
             .cast<FoodItem>()
             .toList();
+        
+        print('✅ Parsed ${results.length} valid products');
+        return results;
       }
+      print('❌ HTTP ${response.statusCode}');
       return [];
     } catch (e) {
-      print('Error searching products: $e');
+      print('❌ Error searching products: $e');
       return [];
     }
   }
