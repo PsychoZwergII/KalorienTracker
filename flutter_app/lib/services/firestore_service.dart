@@ -146,10 +146,13 @@ class FirestoreService {
   }
 
   /// Get user profile
-  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+  Future<UserProfile?> getUserProfile(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
-      return doc.data();
+      if (doc.exists && doc.data() != null) {
+        return UserProfile.fromJson(doc.data()!);
+      }
+      return null;
     } catch (e) {
       print('Get User Profile Error: $e');
       return null;

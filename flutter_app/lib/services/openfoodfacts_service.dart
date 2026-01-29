@@ -106,7 +106,8 @@ class OpenFoodFactsService {
         fiber: (fiber * multiplier).toDouble(),
         mealType: 'snack', // Default meal type, user can change this
         timestamp: DateTime.now(),
-        userId: '', // Will be set by the app
+        source: 'openfoodfacts',
+        barcode: product['code']?.toString(),
       );
     } catch (e) {
       print('Error parsing product: $e');
