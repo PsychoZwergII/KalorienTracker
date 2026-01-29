@@ -129,20 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, activitySnapshot) {
             final activities = activitySnapshot.data ?? [];
             final caloriesBurned = activities.fold<int>(
-          stream: _firestoreService.getTodaysFoods(userId),
-          builder: (context, foodSnapshot) {
-            final foods = foodSnapshot.data ?? [];
-            final foodTotals = _calculateFoodTotals(foods);
-            final meals = _buildMealsFromFoods(foods, calorieGoal);
-
-            return StreamBuilder<List<Activity>>(
-              stream: _firestoreService.getTodaysActivities(userId),
-              builder: (context, activitySnapshot) {
-                final activities = activitySnapshot.data ?? [];
-                final caloriesBurned = activities.fold<int>(
-                  0,
-                  (sum, activity) => sum + activity.caloriesBurned.round(),
-                );
+              0,
+              (sum, activity) => sum + activity.caloriesBurned.round(),
+            );
 
                 final caloriesConsumed = foodTotals['calories']?.round() ?? 0;
                 final caloriesRemaining = calorieGoal - caloriesConsumed + caloriesBurned;
