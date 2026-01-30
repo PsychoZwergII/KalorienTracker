@@ -122,23 +122,17 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
 
       if (!mounted) return;
       
-      // Reset button state first
-      setState(() => _isSaving = false);
+      // Navigate back immediately
+      Navigator.of(context).pop();
       
-      // Show success message
+      // Show success message after navigation (so it appears on home screen)
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✅ Lebensmittel gespeichert'),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 1),
         ),
       );
-      
-      // Navigate back after short delay
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -204,17 +198,18 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
   }
 
   void _selectProduct(FoodItem item) {
-    _selectedProduct = item;
-    _currentSource = 'openfoodfacts';
+    setState(() {
+      _selectedProduct = item;
+      _currentSource = 'openfoodfacts';
+    });
     _nameController.text = item.label;
     _caloriesController.text = _formatNumber(item.calories);
     _proteinController.text = _formatNumber(item.protein);
     _fatController.text = _formatNumber(item.fat);
     _carbsController.text = _formatNumber(item.carbs);
     _fiberController.text = _formatNumber(item.fiber);
-    // Don't update search field - keep the original search query
+    // Keep search results visible - don't call _clearSearchResults()
     _searchFocusNode.unfocus();
-    _clearSearchResults();
   }
 
   String _formatNumber(double value) {
@@ -325,15 +320,25 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final item = _searchResults[index];
-        return ListTile(
-          title: Text(item.label),
-          subtitle: Text(
-            '${_formatNumber(item.calories)} kcal • '
-            'P ${_formatNumber(item.protein)} g • '
-            'F ${_formatNumber(item.fat)} g • '
-            'KH ${_formatNumber(item.carbs)} g',
+        final isSelected = _selectedProduct?.id == item.id;
+        return Container(
+          color: isSelected ? Colors.green.withOpacity(0.2) : null,
+          child: ListTile(
+            title: Text(
+              item.label,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            subtitle: Text(
+              '${_formatNumber(item.calories)} kcal • '
+              'P ${_formatNumber(item.protein)} g • '
+              'F ${_formatNumber(item.fat)} g • '
+              'KH ${_formatNumber(item.carbs)} g',
+            ),
+            trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
+            onTap: () => _selectProduct(item),
           ),
-          onTap: () => _selectProduct(item),
         );
       },
     );
