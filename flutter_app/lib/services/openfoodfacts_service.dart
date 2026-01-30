@@ -31,7 +31,7 @@ class OpenFoodFactsService {
       final response = await http.get(url).timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>?;
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>?;
         
         if (json != null) {
           var translatedText = json['responseData']?['translatedText'] as String? ?? text;
@@ -89,7 +89,7 @@ class OpenFoodFactsService {
         return [];
       }
       
-      final jsonData = jsonDecode(response.body);
+      final jsonData = jsonDecode(utf8.decode(response.bodyBytes));
       
       // BLV returns a direct List
       final foods = (jsonData is List ? jsonData : []) as List<dynamic>;
@@ -189,7 +189,7 @@ class OpenFoodFactsService {
       final response = await http.get(url).timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>?;
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>?;
         if (json != null) {
           return _extractNutrients(json);
         }
@@ -298,7 +298,7 @@ class OpenFoodFactsService {
       ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>?;
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>?;
         
         if (json == null) {
           print('⚠️ FoodRepo: Empty response');

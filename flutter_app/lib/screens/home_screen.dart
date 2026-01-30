@@ -10,6 +10,7 @@ import '../widgets/add_activity_dialog.dart';
 import '../widgets/weight_progress_chart.dart';
 import 'meal_add_screen.dart';
 import 'settings_screen.dart';
+import 'goals_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -960,9 +961,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Ziele anpassen',
                     onTap: () async {
                       await Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                        MaterialPageRoute(builder: (_) => const GoalsScreen()),
                       );
-                      // Refresh profile after settings
+                      // Refresh profile after goals update
                       _refreshProfile();
                     },
                   ),

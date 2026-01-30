@@ -122,23 +122,30 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
 
       if (!mounted) return;
       
+      // Reset button state first
+      setState(() => _isSaving = false);
+      
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Lebensmittel gespeichert'), duration: Duration(seconds: 1)),
+        const SnackBar(
+          content: Text('✅ Lebensmittel gespeichert'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
       );
       
-      // Navigate back after short delay to show snackbar
+      // Navigate back after short delay
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Fehler: $e')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -158,7 +165,11 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
 
   Future<void> _performSearch(String query) async {
     if (!mounted) return;
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _searchResults = []; // Clear old results immediately
+      _showSearchResults = false; // Hide until fully loaded
+    });
 
     try {
       print('🔍 Manual Food Search started for: "$query"');
@@ -166,8 +177,9 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
       final results = await _openFoodFactsService.searchProducts(query);
       if (!mounted) return;
 
-      print('✅ Search returned ${results.length} results');
+      print('✅ Search returned ${results.length} results (all translated)');
       
+      // Only show results after everything is translated
       setState(() {
         _searchResults = results;
         _showSearchResults = true;
@@ -200,7 +212,7 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
     _fatController.text = _formatNumber(item.fat);
     _carbsController.text = _formatNumber(item.carbs);
     _fiberController.text = _formatNumber(item.fiber);
-    _searchController.text = item.label;
+    // Don't update search field - keep the original search query
     _searchFocusNode.unfocus();
     _clearSearchResults();
   }
