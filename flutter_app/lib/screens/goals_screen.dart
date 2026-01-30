@@ -52,7 +52,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _loadUserProfile() async {
     try {
       setState(() => _isLoading = true);
-      final userId = _authService.currentUserId;
+      final userId = _authService.currentUser?.uid;
       if (userId == null) return;
 
       final profile = await _firestoreService.getUserProfile(userId);
@@ -88,7 +88,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
     try {
       setState(() => _isSaving = true);
-      final userId = _authService.currentUserId;
+      final userId = _authService.currentUser?.uid;
       if (userId == null) return;
 
       final updatedProfile = UserProfile(
@@ -106,7 +106,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
         updatedAt: DateTime.now(),
       );
 
-      await _firestoreService.updateUserProfile(userId, updatedProfile);
+      await _firestoreService.saveUserProfile(userId, updatedProfile.toJson());
       
       if (mounted) {
         setState(() => _currentProfile = updatedProfile);
@@ -157,7 +157,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           ),
                           const SizedBox(height: 16),
                           StreamBuilder<List<WeightLog>>(
-                            stream: _firestoreService.getWeightLogs(_authService.currentUserId ?? ''),
+                            stream: _firestoreService.streamWeightLogs(_authService.currentUser?.uid ?? ''),
                             builder: (context, snapshot) {
                               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                                 return const SizedBox(
@@ -169,7 +169,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                               }
 
                               final logs = snapshot.data!;
-                              logs.sort((a, b) => a.date.compareTo(b.date));
+                              logs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
                               return SizedBox(
                                 height: 200,
@@ -195,7 +195,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                           reservedSize: 30,
                                           getTitlesWidget: (value, meta) {
                                             if (value.toInt() >= logs.length) return const Text('');
-                                            final date = logs[value.toInt()].date;
+                                            final date = logs[value.toInt()].timestamp;
                                             return Padding(
                                               padding: const EdgeInsets.only(top: 8),
                                               child: Text(
