@@ -70,10 +70,8 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
   void _handleSearchFocusChange() {
     if (!_searchFocusNode.hasFocus) {
       _showSearchResults = false;
-      _removeOverlay();
     } else if (_searchController.text.trim().length >= 2) {
       _showSearchResults = true;
-      _showOverlay();
     }
     setState(() {});
   }
@@ -83,7 +81,14 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
   }
 
   Future<void> _saveFood() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_selectedProduct == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte ein Suchergebnis auswählen.')),
+        );
+      }
+      return;
+    }
 
     final user = _authService.currentUser;
     if (user == null) {
@@ -98,17 +103,18 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final selected = _selectedProduct!;
       final foodItem = FoodItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        barcode: _selectedProduct?.barcode ?? _inferBarcode(_selectedProduct),
-        label: _nameController.text.trim(),
-        calories: _parseNumber(_caloriesController.text),
-        protein: _parseNumber(_proteinController.text),
-        fat: _parseNumber(_fatController.text),
-        carbs: _parseNumber(_carbsController.text),
-        fiber: _parseNumber(_fiberController.text),
+        barcode: selected.barcode ?? _inferBarcode(selected),
+        label: selected.label,
+        calories: selected.calories,
+        protein: selected.protein,
+        fat: selected.fat,
+        carbs: selected.carbs,
+        fiber: selected.fiber,
         timestamp: DateTime.now(),
-        source: _currentSource,
+        source: selected.source,
         mealType: widget.mealType,
       );
 
@@ -166,7 +172,6 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
         _searchResults = results;
         _showSearchResults = true;
       });
-      _showOverlay();
     } catch (e) {
       print('❌ Search error: $e');
       if (mounted) {
@@ -184,7 +189,6 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
       _searchResults = [];
       _showSearchResults = false;
     });
-    _removeOverlay();
   }
 
   void _selectProduct(FoodItem item) {
@@ -276,6 +280,16 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
       );
     }
 
+    if (_searchController.text.trim().length < 2) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Tippen Sie mind. 2 Zeichen, um zu suchen.',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+      );
+    }
+
     if (_searchResults.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -350,24 +364,14 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (value) =>
-                      (value == null || value.isEmpty)
-                          ? 'Bitte Name eingeben'
-                          : null,
+                Container(
+                  height: 260,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _buildSearchResults(),
                 ),
-                const SizedBox(height: 12),
-                _numberField(_caloriesController, 'Kalorien (kcal)'),
-                const SizedBox(height: 12),
-                _numberField(_proteinController, 'Eiweiß (g)'),
-                const SizedBox(height: 12),
-                _numberField(_fatController, 'Fett (g)'),
-                const SizedBox(height: 12),
-                _numberField(_carbsController, 'Kohlenhydrate (g)'),
-                const SizedBox(height: 12),
-                _numberField(_fiberController, 'Ballaststoffe (g)'),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
