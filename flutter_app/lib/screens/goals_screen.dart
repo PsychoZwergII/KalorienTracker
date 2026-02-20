@@ -151,247 +151,244 @@ class _GoalsScreenState extends State<GoalsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-                  // Körperdaten Formular
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Körperdaten & Ziele',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const SizedBox(height: 16),
-                              // Gewichtsdaten
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _startWeightController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Startgewicht (kg)',
-                                        prefixIcon: const Icon(Icons.flag),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        border: OutlineInputBorder(),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Bitte eingeben';
-                                        }
-                                        if (double.tryParse(value) == null) {
-                                          return 'Ungültige Zahl';
-                                        }
-                                        return null;
-                                      },
+            // Körperdaten Formular
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                            Text(
+                              'Körperdaten & Ziele',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 16),
+                            // Gewichtsdaten
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _startWeightController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Startgewicht (kg)',
+                                      prefixIcon: const Icon(Icons.flag),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                     ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Bitte eingeben';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Ungültige Zahl';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _currentWeightController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Aktuell (kg)',
-                                        prefixIcon: const Icon(Icons.monitor_weight),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        border: OutlineInputBorder(),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Bitte eingeben';
-                                        }
-                                        if (double.tryParse(value) == null) {
-                                          return 'Ungültige Zahl';
-                                        }
-                                        return null;
-                                      },
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _currentWeightController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Aktuell (kg)',
+                                      prefixIcon: const Icon(Icons.monitor_weight),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                     ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Bitte eingeben';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Ungültige Zahl';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _targetWeightController,
-                                decoration: InputDecoration(
-                                  labelText: 'Zielgewicht (kg)',
-                                  prefixIcon: const Icon(Icons.track_changes),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                 ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Bitte eingeben';
-                                  }
-                                  if (double.tryParse(value) == null) {
-                                    return 'Ungültige Zahl';
-                                  }
-                                  return null;
-                                },
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _targetWeightController,
+                              decoration: InputDecoration(
+                                labelText: 'Zielgewicht (kg)',
+                                prefixIcon: const Icon(Icons.track_changes),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                               ),
-                              const SizedBox(height: 12),
-                              // Körpergröße und Alter
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _heightController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Größe (cm)',
-                                        prefixIcon: const Icon(Icons.height),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        border: OutlineInputBorder(),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Bitte eingeben';
-                                        }
-                                        if (double.tryParse(value) == null) {
-                                          return 'Ungültige Zahl';
-                                        }
-                                        return null;
-                                      },
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Bitte eingeben';
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return 'Ungültige Zahl';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            // Körpergröße und Alter
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _heightController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Größe (cm)',
+                                      prefixIcon: const Icon(Icons.height),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                     ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Bitte eingeben';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Ungültige Zahl';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _ageController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Alter (Jahre)',
-                                        prefixIcon: const Icon(Icons.cake),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        border: OutlineInputBorder(),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Bitte eingeben';
-                                        }
-                                        if (int.tryParse(value) == null) {
-                                          return 'Ungültige Zahl';
-                                        }
-                                        return null;
-                                      },
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _ageController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Alter (Jahre)',
+                                      prefixIcon: const Icon(Icons.cake),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                     ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Bitte eingeben';
+                                      }
+                                      if (int.tryParse(value) == null) {
+                                        return 'Ungültige Zahl';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              // Geschlecht
-                              DropdownButtonFormField<Gender>(
-                                value: _selectedGender,
-                                decoration: InputDecoration(
-                                  labelText: 'Geschlecht',
-                                  prefixIcon: const Icon(Icons.person_outline),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                                 ),
-                                items: Gender.values.map((gender) {
-                                  return DropdownMenuItem(
-                                    value: gender,
-                                    child: Text(
-                                      gender == Gender.male ? 'Männlich' : gender == Gender.female ? 'Weiblich' : 'Divers'
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() => _selectedGender = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Bitte auswählen';
-                                  }
-                                  return null;
-                                },
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Geschlecht
+                            DropdownButtonFormField<Gender>(
+                              value: _selectedGender,
+                              decoration: InputDecoration(
+                                labelText: 'Geschlecht',
+                                prefixIcon: const Icon(Icons.person_outline),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                               ),
-                              const SizedBox(height: 12),
-                              // Aktivitätslevel
-                              DropdownButtonFormField<ActivityLevel>(
-                                value: _selectedActivityLevel,
-                                decoration: InputDecoration(
-                                  labelText: 'Aktivitätslevel',
-                                  prefixIcon: const Icon(Icons.directions_run),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                ),
-                                items: ActivityLevel.values.map((level) {
-                                  return DropdownMenuItem(
-                                    value: level,
-                                    child: Text(level.displayName),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() => _selectedActivityLevel = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Bitte auswählen';
-                                  }
-                                  return null;
-                                },
+                              items: Gender.values.map((gender) {
+                                return DropdownMenuItem(
+                                  value: gender,
+                                  child: Text(
+                                    gender == Gender.male ? 'Männlich' : gender == Gender.female ? 'Weiblich' : 'Divers'
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedGender = value);
+                              },
+                              validator: (value) {
+                                if (value == null) {
+                                  return 'Bitte auswählen';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            // Aktivitätslevel
+                            DropdownButtonFormField<ActivityLevel>(
+                              value: _selectedActivityLevel,
+                              decoration: InputDecoration(
+                                labelText: 'Aktivitätslevel',
+                                prefixIcon: const Icon(Icons.directions_run),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                               ),
-                              const SizedBox(height: 12),
-                              // Gewichtsziel
-                              DropdownButtonFormField<WeightGoal>(
-                                value: _selectedWeightGoal,
-                                decoration: InputDecoration(
-                                  labelText: 'Ziel',
-                                  prefixIcon: const Icon(Icons.emoji_events),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                ),
-                                items: WeightGoal.values.map((goal) {
-                                  return DropdownMenuItem(
-                                    value: goal,
-                                    child: Text(goal.displayName),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() => _selectedWeightGoal = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Bitte auswählen';
-                                  }
-                                  return null;
-                                },
+                              items: ActivityLevel.values.map((level) {
+                                return DropdownMenuItem(
+                                  value: level,
+                                  child: Text(level.displayName),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedActivityLevel = value);
+                              },
+                              validator: (value) {
+                                if (value == null) {
+                                  return 'Bitte auswählen';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            // Gewichtsziel
+                            DropdownButtonFormField<WeightGoal>(
+                              value: _selectedWeightGoal,
+                              decoration: InputDecoration(
+                                labelText: 'Ziel',
+                                prefixIcon: const Icon(Icons.emoji_events),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                               ),
+                              items: WeightGoal.values.map((goal) {
+                                return DropdownMenuItem(
+                                  value: goal,
+                                  child: Text(goal.displayName),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedWeightGoal = value);
+                              },
+                              validator: (value) {
+                                if (value == null) {
+                                  return 'Bitte auswählen';
+                                }
+                                return null;
+                              },
+                            ),
                               const SizedBox(height: 24),
                             
                             // Speichern Button
