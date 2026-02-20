@@ -778,9 +778,9 @@ MIT License - Frei nutzbar für private und kommerzielle Projekte.
 
 ---
 
-## 👤 Author
+## 👤 Psycho_Zwerg
 
-Entwickelt mit ❤️ und KI-Unterstützung
+Entwickelt mit ❤️
 
 ---
 

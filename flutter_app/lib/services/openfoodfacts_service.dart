@@ -59,47 +59,48 @@ class OpenFoodFactsService {
   /// Search for products by name or query (BLV API)
   Future<List<FoodItem>> searchProducts(String query) async {
     if (query.trim().isEmpty) return [];
-    
+
     try {
-      // Try both German and English searches
       final String searchQuery = query.toLowerCase();
-      final isGerman = _isGermanWord(searchQuery);
-      
-      String englishQuery = searchQuery;
+      // Neue Logik: Nur Deutsch, wenn explizit deutsche Sonderzeichen oder typische deutsche Wörter
+      final isGerman = _looksExplicitlyGerman(searchQuery);
+
+      String apiQuery = searchQuery;
+      String lang = 'en';
       if (isGerman) {
-        englishQuery = await _translateText(searchQuery, 'de', 'en');
+        apiQuery = await _translateText(searchQuery, 'de', 'en');
+        lang = 'de';
       }
-      
-      print('🔍 Search: "$query" (German: $isGerman) → English: "$englishQuery"');
-      
-      // Call BLV API
+
+      print('🔍 Search: "$query" (German: $isGerman) → Query: "$apiQuery" (lang: $lang)');
+
       final url = Uri.parse('$_blvApiUrl/foods')
           .replace(queryParameters: {
-            'search': englishQuery,
+            'search': apiQuery,
             'limit': '30',
-            'lang': 'en',
+            'lang': lang,
           });
-      
+
       print('📡 Calling: $url');
-      
+
       final response = await http.get(url).timeout(const Duration(seconds: 15));
-      
+
       if (response.statusCode != 200) {
         print('❌ API returned ${response.statusCode}');
         return [];
       }
-      
+
       final jsonData = jsonDecode(utf8.decode(response.bodyBytes));
-      
+
       // BLV returns a direct List
       final foods = (jsonData is List ? jsonData : []) as List<dynamic>;
-      
+
       print('📊 Got ${foods.length} results');
-      
+
       if (foods.isEmpty) {
         return [];
       }
-      
+
       // Parse each food item (max 15 to avoid too many API calls)
       final List<FoodItem> results = [];
       for (int i = 0; i < foods.length && i < 15; i++) {
@@ -112,13 +113,33 @@ class OpenFoodFactsService {
           print('⚠️ Parse error at $i: $e');
         }
       }
-      
+
       print('✅ Created ${results.length} items');
       return results;
     } catch (e) {
       print('❌ Search error: $e');
       return [];
     }
+  }
+
+  /// Neue Logik: explizit deutsch, wenn Sonderzeichen oder typische Wörter
+  bool _looksExplicitlyGerman(String word) {
+    // Enthält deutsche Sonderzeichen?
+    if (word.contains('ä') || word.contains('ö') || word.contains('ü') || word.contains('ß')) {
+      return true;
+    }
+    // Enthält typische deutsche Begriffe?
+    final germanWords = [
+      'apfel', 'kartoffel', 'brot', 'käse', 'milch', 'butter', 'ei', 'fleisch',
+      'huhn', 'fisch', 'salat', 'tomate', 'zwiebel', 'knoblauch', 'paprika',
+      'nudel', 'reis', 'bohne', 'linse', 'erbse', 'möhre', 'karotte',
+      'quark', 'wurst', 'schinken', 'rind', 'schwein', 'pute', 'geflügel',
+      'joghurt', 'rahm', 'sahne', 'frischkäse', 'käsekuchen', 'leberwurst',
+      'brötchen', 'semmel', 'brezel', 'kohl', 'rotkohl', 'sauerkraut',
+      'spätzle', 'knödel', 'klöße', 'grünkohl', 'weißwurst', 'leberkäse',
+      'schupfnudeln', 'schupfnudel', 'schupfnudeln', 'schupfnudel',
+    ];
+    return germanWords.any((w) => word.contains(w));
   }
   
   /// Check if word looks German

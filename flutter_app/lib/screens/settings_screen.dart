@@ -16,21 +16,34 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Einstellungen'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
       ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Account Information
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Column(
               children: [
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundColor: Colors.grey.shade300,
                     child: Text(
                       user?.email?.substring(0, 1).toUpperCase() ?? '?',
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.black),
                     ),
                   ),
                   title: const Text('Account'),
@@ -52,7 +65,18 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Navigation zu Zielen
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: ListTile(
               leading: const Icon(Icons.emoji_events, color: Colors.amber),
               title: const Text('Ziele & Fortschritt'),
@@ -70,7 +94,18 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Dark Mode Toggle
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: SwitchListTile(
               secondary: Icon(
                 themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
@@ -89,7 +124,18 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // App Info
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: ListTile(
               leading: const Icon(Icons.info),
               title: const Text('App Version'),
@@ -110,9 +156,10 @@ class SettingsScreen extends StatelessWidget {
             icon: const Icon(Icons.logout),
             label: const Text('Abmelden'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: Colors.grey.shade200,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 12),
+              elevation: 0,
             ),
           ),
         ],

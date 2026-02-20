@@ -90,6 +90,8 @@ class UserProfile {
         return tdee + 300;
       case WeightGoal.maintain:
         return tdee;
+      case WeightGoal.muscle:
+        return tdee + 500; // Muskelaufbau: mehr Kalorienüberschuss
     }
   }
 
@@ -201,6 +203,7 @@ enum WeightGoal {
   lose, // Abnehmen
   maintain, // Halten
   gain, // Zunehmen
+  muscle, // Muskelaufbau
 }
 
 extension WeightGoalExtension on WeightGoal {
@@ -212,6 +215,8 @@ extension WeightGoalExtension on WeightGoal {
         return 'Gewicht halten';
       case WeightGoal.gain:
         return 'Zunehmen';
+      case WeightGoal.muscle:
+        return 'Muskelaufbau';
     }
   }
 }
