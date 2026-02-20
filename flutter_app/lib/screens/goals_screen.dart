@@ -393,16 +393,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 },
                               ),
                               const SizedBox(height: 24),
-                              },
-                              validator: (value) {
-                                if (value == null) {
-                                  return 'Bitte auswählen';
-                                }
-                                return null;
-                              },
-                            ),
-                            
-                            const SizedBox(height: 24),
                             
                             // Speichern Button
                             SizedBox(
