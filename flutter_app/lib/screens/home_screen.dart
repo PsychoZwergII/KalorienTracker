@@ -739,11 +739,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  int _calculateCalorieGoal(UserProfile? profile) {
-    final goal = profile?.calculateDailyCalorieGoal();
-    if (goal == null || goal.isNaN) return _calorieGoal;
-    return goal.round();
-  }
+
 
   Map<String, double> _calculateMacroGoals(int calorieGoal) {
     if (calorieGoal <= 0) {

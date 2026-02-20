@@ -16,11 +16,7 @@ class UserProfile {
   final int? age; // Jahre
   final Gender? gender;
   
-  // Aktivitätslevel für TDEE Berechnung
-  final ActivityLevel? activityLevel;
-  
-  // Ziel (Abnehmen, Zunehmen, Halten)
-  final WeightGoal? weightGoal;
+
   
   // Timestamps
   final DateTime createdAt;
@@ -36,8 +32,7 @@ class UserProfile {
     this.height,
     this.age,
     this.gender,
-    this.activityLevel,
-    this.weightGoal,
+
     required this.createdAt,
     required this.updatedAt,
   });
@@ -62,38 +57,7 @@ class UserProfile {
     }
   }
 
-  /// Berechnet TDEE (Total Daily Energy Expenditure)
-  /// BMR × Aktivitätsfaktor
-  double? calculateTDEE() {
-    final bmr = calculateBMR();
-    if (bmr == null || activityLevel == null) {
-      return null;
-    }
-    
-    return bmr * activityLevel!.multiplier;
-  }
 
-  /// Berechnet empfohlene tägliche Kalorienzufuhr basierend auf Ziel
-  /// Abnehmen: TDEE - 500 kcal (0.5 kg/Woche)
-  /// Zunehmen: TDEE + 300 kcal (0.3 kg/Woche)
-  /// Halten: TDEE
-  double? calculateDailyCalorieGoal() {
-    final tdee = calculateTDEE();
-    if (tdee == null || weightGoal == null) {
-      return null;
-    }
-    
-    switch (weightGoal!) {
-      case WeightGoal.lose:
-        return tdee - 500;
-      case WeightGoal.gain:
-        return tdee + 300;
-      case WeightGoal.maintain:
-        return tdee;
-      case WeightGoal.muscle:
-        return tdee + 500; // Muskelaufbau: mehr Kalorienüberschuss
-    }
-  }
 
   /// Berechnet Fortschritt zum Zielgewicht in Prozent
   double? calculateWeightProgress() {
@@ -130,8 +94,7 @@ class UserProfile {
     double? height,
     int? age,
     Gender? gender,
-    ActivityLevel? activityLevel,
-    WeightGoal? weightGoal,
+    
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -145,8 +108,7 @@ class UserProfile {
       height: height ?? this.height,
       age: age ?? this.age,
       gender: gender ?? this.gender,
-      activityLevel: activityLevel ?? this.activityLevel,
-      weightGoal: weightGoal ?? this.weightGoal,
+
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -159,64 +121,6 @@ enum Gender {
   other,
 }
 
-enum ActivityLevel {
-  sedentary, // Sitzend (wenig/keine Bewegung)
-  light, // Leicht aktiv (1-3 Tage/Woche leichter Sport)
-  moderate, // Moderat aktiv (3-5 Tage/Woche)
-  active, // Sehr aktiv (6-7 Tage/Woche)
-  extreme, // Extrem aktiv (2x täglich Training, physische Arbeit)
-}
-
-extension ActivityLevelExtension on ActivityLevel {
-  double get multiplier {
-    switch (this) {
-      case ActivityLevel.sedentary:
-        return 1.2;
-      case ActivityLevel.light:
-        return 1.375;
-      case ActivityLevel.moderate:
-        return 1.55;
-      case ActivityLevel.active:
-        return 1.725;
-      case ActivityLevel.extreme:
-        return 1.9;
-    }
-  }
-
-  String get displayName {
-    switch (this) {
-      case ActivityLevel.sedentary:
-        return 'Sitzend (wenig Bewegung)';
-      case ActivityLevel.light:
-        return 'Leicht aktiv (1-3 Tage/Woche)';
-      case ActivityLevel.moderate:
-        return 'Moderat aktiv (3-5 Tage/Woche)';
-      case ActivityLevel.active:
-        return 'Sehr aktiv (6-7 Tage/Woche)';
-      case ActivityLevel.extreme:
-        return 'Extrem aktiv (täglich intensiv)';
-    }
-  }
-}
-
 enum WeightGoal {
-  lose, // Abnehmen
-  maintain, // Halten
-  gain, // Zunehmen
-  muscle, // Muskelaufbau
-}
-
 extension WeightGoalExtension on WeightGoal {
-  String get displayName {
-    switch (this) {
-      case WeightGoal.lose:
-        return 'Abnehmen';
-      case WeightGoal.maintain:
-        return 'Gewicht halten';
-      case WeightGoal.gain:
-        return 'Zunehmen';
-      case WeightGoal.muscle:
-        return 'Muskelaufbau';
-    }
-  }
-}
+

@@ -30,8 +30,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   bool _isSaving = false;
   UserProfile? _currentProfile;
   Gender? _selectedGender;
-  ActivityLevel? _selectedActivityLevel;
-  WeightGoal? _selectedWeightGoal;
+
 
   @override
   void initState() {
@@ -45,8 +44,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
       _heightController.text = _currentProfile!.height?.toString() ?? '';
       _ageController.text = _currentProfile!.age?.toString() ?? '';
       _selectedGender = _currentProfile!.gender;
-      _selectedActivityLevel = _currentProfile!.activityLevel;
-      _selectedWeightGoal = _currentProfile!.weightGoal;
+
     }
   }
 
@@ -77,8 +75,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
           _heightController.text = profile.height?.toString() ?? '';
           _ageController.text = profile.age?.toString() ?? '';
           _selectedGender = profile.gender;
-          _selectedActivityLevel = profile.activityLevel;
-          _selectedWeightGoal = profile.weightGoal;
+
         });
       }
     } catch (e) {
@@ -115,8 +112,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
           height: double.tryParse(_heightController.text),
           age: int.tryParse(_ageController.text),
           gender: _selectedGender,
-          activityLevel: _selectedActivityLevel,
-          weightGoal: _selectedWeightGoal,
+
           createdAt: _currentProfile?.createdAt ?? DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -337,62 +333,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 },
                               ),
                               const SizedBox(height: 12),
-                              // Aktivitätslevel
-                              DropdownButtonFormField<ActivityLevel>(
-                                value: _selectedActivityLevel,
-                                decoration: InputDecoration(
-                                  labelText: 'Aktivitätslevel',
-                                  prefixIcon: const Icon(Icons.directions_run),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                ),
-                                items: ActivityLevel.values.map((level) {
-                                  return DropdownMenuItem(
-                                    value: level,
-                                    child: Text(level.displayName),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() => _selectedActivityLevel = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Bitte auswählen';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              // Gewichtsziel
-                              DropdownButtonFormField<WeightGoal>(
-                                value: _selectedWeightGoal,
-                                decoration: InputDecoration(
-                                  labelText: 'Ziel',
-                                  prefixIcon: const Icon(Icons.emoji_events),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                ),
-                                items: WeightGoal.values.map((goal) {
-                                  return DropdownMenuItem(
-                                    value: goal,
-                                    child: Text(goal.displayName),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() => _selectedWeightGoal = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Bitte auswählen';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 24),
+
                               },
                               validator: (value) {
                                 if (value == null) {
@@ -446,16 +387,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                         'BMR (Grundumsatz):',
                                         '${_currentProfile!.calculateBMR()!.toStringAsFixed(0)} kcal',
                                       ),
-                                    if (_currentProfile!.calculateTDEE() != null)
-                                      _buildInfoRow(
-                                        'TDEE (Gesamtumsatz):',
-                                        '${_currentProfile!.calculateTDEE()!.toStringAsFixed(0)} kcal',
-                                      ),
-                                    if (_currentProfile!.calculateDailyCalorieGoal() != null)
-                                      _buildInfoRow(
-                                        'Empfohlene Kalorienzufuhr:',
-                                        '${_currentProfile!.calculateDailyCalorieGoal()!.toStringAsFixed(0)} kcal/Tag',
-                                      ),
+
                                     if (_currentProfile!.remainingWeightChange() != null)
                                       _buildInfoRow(
                                         'Verbleibend zum Ziel:',

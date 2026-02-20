@@ -15,8 +15,7 @@ UserProfile _$UserProfileFromJson(Map<String, dynamic> json) {
     height: (json['height'] as num?)?.toDouble(),
     age: json['age'] as int?,
     gender: json['gender'] == null ? null : Gender.values.firstWhere((e) => e.toString() == 'Gender.${json['gender']}'),
-    activityLevel: json['activityLevel'] == null ? null : ActivityLevel.values.firstWhere((e) => e.toString() == 'ActivityLevel.${json['activityLevel']}'),
-    weightGoal: json['weightGoal'] == null ? null : WeightGoal.values.firstWhere((e) => e.toString() == 'WeightGoal.${json['weightGoal']}'),
+
     createdAt: DateTime.parse(json['createdAt'] as String),
     updatedAt: DateTime.parse(json['updatedAt'] as String),
   );
@@ -32,8 +31,7 @@ Map<String, dynamic> _$UserProfileToJson(UserProfile instance) => {
   'height': instance.height,
   'age': instance.age,
   'gender': instance.gender?.toString().split('.').last,
-  'activityLevel': instance.activityLevel?.toString().split('.').last,
-  'weightGoal': instance.weightGoal?.toString().split('.').last,
+
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
 };
