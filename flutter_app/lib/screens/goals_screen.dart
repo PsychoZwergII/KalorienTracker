@@ -8,7 +8,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 class GoalsScreen extends StatefulWidget {
   final UserProfile? userProfile;
-  const GoalsScreen({super.key, required this.userProfile});
+  const GoalsScreen({super.key, this.userProfile});
 
   @override
   State<GoalsScreen> createState() => _GoalsScreenState();
@@ -28,6 +28,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   // State
   bool _isSaving = false;
+  bool _isLoading = false;
   UserProfile? _currentProfile;
   Gender? _selectedGender;
   ActivityLevel? _selectedActivityLevel;

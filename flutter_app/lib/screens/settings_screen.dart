@@ -85,7 +85,7 @@ class SettingsScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const GoalsScreen()),
+                  MaterialPageRoute(builder: (_) => const GoalsScreen(userProfile: null)),
                 );
               },
             ),

@@ -961,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Ziele anpassen',
                     onTap: () async {
                       await Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const GoalsScreen()),
+                        MaterialPageRoute(builder: (_) => GoalsScreen(userProfile: _cachedProfile)),
                       );
                       // Refresh profile after goals update
                       _refreshProfile();
@@ -990,5 +990,17 @@ class _HomeScreenState extends State<HomeScreen> {
 ),
 ),
 );
-}
+  }
+
+  Widget _buildSettingItem(
+    IconData icon,
+    String title, {
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      onTap: onTap,
+    );
+  }
 }
