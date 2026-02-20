@@ -983,4 +983,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 },
                 icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
+        label: const Text('Logout'),
+      ),
+    ),
+  ],
+),
+),
+);
+}
+}
