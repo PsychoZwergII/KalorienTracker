@@ -86,10 +86,10 @@ class WeightProgressChart extends StatelessWidget {
   Widget _buildLegend(BuildContext context) {
     return Row(
       children: [
-        _buildLegendItem(context, Colors.green, 'Aktuell'),
+        _buildLegendItem(context, Colors.grey.shade700, 'Aktuell'),
         const SizedBox(width: 16),
         if (userProfile?.targetWeight != null)
-          _buildLegendItem(context, Colors.orange, 'Ziel'),
+          _buildLegendItem(context, Colors.blue.shade700, 'Ziel'),
       ],
     );
   }
@@ -204,7 +204,7 @@ class WeightProgressChart extends StatelessWidget {
         LineChartBarData(
           spots: spots,
           isCurved: true,
-          color: Colors.green,
+          color: Colors.grey.shade700,
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
@@ -212,7 +212,7 @@ class WeightProgressChart extends StatelessWidget {
             getDotPainter: (spot, percent, barData, index) {
               return FlDotCirclePainter(
                 radius: 4,
-                color: Colors.green,
+                color: Colors.grey.shade700,
                 strokeWidth: 2,
                 strokeColor: Colors.white,
               );
@@ -220,7 +220,7 @@ class WeightProgressChart extends StatelessWidget {
           ),
           belowBarData: BarAreaData(
             show: true,
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.grey.withOpacity(0.1),
           ),
         ),
         // Zielgewicht Linie
@@ -292,7 +292,7 @@ class WeightProgressChart extends StatelessWidget {
                 'Veränderung',
                 '${isLoss ? '' : '+'}${weightChange.toStringAsFixed(1)} kg',
                 isLoss ? Icons.trending_down : Icons.trending_up,
-                color: isLoss ? Colors.green : Colors.orange,
+                color: isLoss ? Colors.grey.shade700 : Colors.blue.shade700,
               ),
               _buildStatItem(
                 context,

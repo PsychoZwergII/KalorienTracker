@@ -43,8 +43,8 @@ class UserProfile {
   });
 
   /// Berechnet BMR (Basal Metabolic Rate) mit Mifflin-St Jeor Formel
-  /// Männer: BMR = (10 × Gewicht in kg) + (6,25 × Größe in cm) - (5 × Alter in Jahren) + 5
-  /// Frauen: BMR = (10 × Gewicht in kg) + (6,25 × Größe in cm) - (5 × Alter in Jahren) - 161
+  /// Männer: BMR = (10 × Gewicht in kg) + (6,25 × Groesse in cm) - (5 × Alter in Jahren) + 5
+  /// Frauen: BMR = (10 × Gewicht in kg) + (6,25 × Groesse in cm) - (5 × Alter in Jahren) - 161
   double? calculateBMR() {
     if (currentWeight == null || height == null || age == null || gender == null) {
       return null;

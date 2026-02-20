@@ -100,47 +100,40 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
       return;
     }
 
-    setState(() => _isSaving = true);
+    // Sofort zurückspringen
+    Navigator.of(context).pop();
 
-    try {
-      final selected = _selectedProduct!;
-      final foodItem = FoodItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        barcode: selected.barcode ?? _inferBarcode(selected),
-        label: selected.label,
-        calories: selected.calories,
-        protein: selected.protein,
-        fat: selected.fat,
-        carbs: selected.carbs,
-        fiber: selected.fiber,
-        timestamp: DateTime.now(),
-        source: selected.source,
-        mealType: widget.mealType,
-      );
-
-      await _firestoreService.addFoodItem(user.uid, foodItem);
-
-      if (!mounted) return;
-      
-      // Navigate back immediately
-      Navigator.of(context).pop();
-      
-      // Show success message after navigation (so it appears on home screen)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Lebensmittel gespeichert'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 1),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e')),
+    // Im Hintergrund speichern
+    Future(() async {
+      try {
+        final selected = _selectedProduct!;
+        final foodItem = FoodItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          barcode: selected.barcode ?? _inferBarcode(selected),
+          label: selected.label,
+          calories: selected.calories,
+          protein: selected.protein,
+          fat: selected.fat,
+          carbs: selected.carbs,
+          fiber: selected.fiber,
+          timestamp: DateTime.now(),
+          source: selected.source,
+          mealType: widget.mealType,
         );
+
+        await _firestoreService.addFoodItem(user.uid, foodItem);
+        // Optional: SnackBar auf vorheriger Seite anzeigen
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text('✅ Lebensmittel gespeichert'),
+        //     backgroundColor: Colors.green,
+        //     duration: Duration(seconds: 1),
+        //   ),
+        // );
+      } catch (e) {
+        // Fehlerbehandlung ggf. Logging
       }
-    }
+    });
   }
 
   void _onSearchChanged(String value) {

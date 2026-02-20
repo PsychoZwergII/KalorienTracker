@@ -182,7 +182,7 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildRow('Kalorien', '${_result!.calories.toStringAsFixed(0)} kcal'),
-                      _buildRow('Eiweiß', '${_result!.protein.toStringAsFixed(1)} g'),
+                      _buildRow('Eiweiss', '${_result!.protein.toStringAsFixed(1)} g'),
                       _buildRow('Fett', '${_result!.fat.toStringAsFixed(1)} g'),
                       _buildRow('Kohlenh.', '${_result!.carbs.toStringAsFixed(1)} g'),
                       _buildRow('Ballastst.', '${_result!.fiber.toStringAsFixed(1)} g'),

@@ -128,7 +128,7 @@ extension ActivityTypeExtension on ActivityType {
       
       // Sport
       case ActivityType.soccer:
-        return 10.0; // Fußball
+        return 10.0; // Fussball
       case ActivityType.basketball:
         return 8.0;
       case ActivityType.tennis:
@@ -180,7 +180,7 @@ extension ActivityTypeExtension on ActivityType {
       
       // Sport
       case ActivityType.soccer:
-        return 'Fußball';
+        return 'Fussball';
       case ActivityType.basketball:
         return 'Basketball';
       case ActivityType.tennis:

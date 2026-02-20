@@ -285,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _buildMacroCircle(
-                                  'Eiweiß',
+                                  'Eiweiss',
                                   foodTotals['protein'] ?? 0,
                                   macroGoals['protein'] ?? 0,
                                   Colors.pink.shade300,
@@ -984,59 +984,77 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 icon: const Icon(Icons.logout),
                 label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey.shade300,
+                          child: Text(
+                            (widget.user.displayName ?? 'U')[0].toUpperCase(),
+                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          widget.user.displayName ?? 'User',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.user.email ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              _buildSettingItem(
+                                Icons.settings,
+                                'Einstellungen',
+                                onTap: () async {
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                  );
+                                  _refreshProfile();
+                                },
+                              ),
+                              const Divider(),
+                              _buildSettingItem(
+                                Icons.track_changes,
+                                'Ziele anpassen',
+                                onTap: () async {
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => GoalsScreen(userProfile: _cachedProfile)),
+                                  );
+                                  _refreshProfile();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingItem(IconData icon, String title, {VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap ??
-          () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$title - Coming Soon!')),
-            );
-          },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF2C3E50)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
-  }
-
-  String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-    return '${date.day}. ${months[date.month - 1]} ${date.year}';
-  }
-}
+                );

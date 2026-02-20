@@ -52,40 +52,30 @@ class _AddActivityDialogState extends State<AddActivityDialog> {
       return;
     }
 
-    setState(() => _isSaving = true);
+    // Sofort zurückspringen
+    Navigator.of(context).pop(true);
 
-    try {
-      final duration = int.parse(_durationController.text);
-      final calories = _calculateCalories();
-      
-      final activity = Activity(
-        activityId: const Uuid().v4(),
-        userId: widget.userId,
-        type: _selectedType,
-        durationMinutes: duration,
-        caloriesBurned: calories,
-        intensity: _selectedIntensity,
-        timestamp: DateTime.now(),
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-      );
-
-      await _firestoreService.addActivity(widget.userId, activity);
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fehler: $e'),
-            backgroundColor: Colors.red,
-          ),
+    // Im Hintergrund speichern
+    Future(() async {
+      try {
+        final duration = int.parse(_durationController.text);
+        final calories = _calculateCalories();
+        final activity = Activity(
+          activityId: const Uuid().v4(),
+          userId: widget.userId,
+          type: _selectedType,
+          durationMinutes: duration,
+          caloriesBurned: calories,
+          intensity: _selectedIntensity,
+          timestamp: DateTime.now(),
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
         );
+        await _firestoreService.addActivity(widget.userId, activity);
+        // Optional: SnackBar auf vorheriger Seite anzeigen
+      } catch (e) {
+        // Fehlerbehandlung ggf. Logging
       }
-    } finally {
-      setState(() => _isSaving = false);
-    }
+    });
   }
 
   @override

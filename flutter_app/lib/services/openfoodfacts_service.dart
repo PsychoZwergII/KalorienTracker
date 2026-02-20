@@ -125,7 +125,7 @@ class OpenFoodFactsService {
   /// Neue Logik: explizit deutsch, wenn Sonderzeichen oder typische Wörter
   bool _looksExplicitlyGerman(String word) {
     // Enthält deutsche Sonderzeichen?
-    if (word.contains('ä') || word.contains('ö') || word.contains('ü') || word.contains('ß')) {
+    if (word.contains('ä') || word.contains('ö') || word.contains('ü') || word.contains('ss')) {
       return true;
     }
     // Enthält typische deutsche Begriffe?
@@ -136,7 +136,7 @@ class OpenFoodFactsService {
       'quark', 'wurst', 'schinken', 'rind', 'schwein', 'pute', 'geflügel',
       'joghurt', 'rahm', 'sahne', 'frischkäse', 'käsekuchen', 'leberwurst',
       'brötchen', 'semmel', 'brezel', 'kohl', 'rotkohl', 'sauerkraut',
-      'spätzle', 'knödel', 'klöße', 'grünkohl', 'weißwurst', 'leberkäse',
+      'spaetzle', 'knoedel', 'kloesse', 'gruenkohl', 'weisswurst', 'leberkaese',
       'schupfnudeln', 'schupfnudel', 'schupfnudeln', 'schupfnudel',
     ];
     return germanWords.any((w) => word.contains(w));
