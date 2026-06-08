@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import 'logger_service.dart';
 import '../models/food_item.dart';
 import '../models/user_profile.dart';
 import '../models/activity.dart';
@@ -365,4 +366,5 @@ class FirestoreService {
     }
   }
 }
+
 

@@ -6,6 +6,8 @@ import '../models/user_profile.dart';
 import '../models/weight_log.dart';
 import '../services/firestore_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/logger_service.dart';
+import '../services/error_handler_service.dart';
 import '../widgets/add_activity_dialog.dart';
 import '../widgets/weight_progress_chart.dart';
 import 'meal_add_screen.dart';
@@ -38,6 +40,10 @@ class _HomeScreenState extends State<HomeScreen> {
   UserProfile? _cachedProfile;
   bool _profileLoaded = false;
 
+  // Cached today's data to avoid multiple rebuilds
+  List<FoodItem>? _cachedFoods;
+  List<Activity>? _cachedActivities;
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      print('❌ Error loading profile: $e');
+      LoggerService.error('Error loading profile: $e');
       if (mounted) {
         setState(() => _profileLoaded = true);
       }

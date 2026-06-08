@@ -7,30 +7,35 @@ import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
+import 'services/logger_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Set log level to warning in release builds
+  assert(() {
+    LoggerService.setMinLevel(LogLevel.debug);
+    return true;
+  }());
+  
   try {
-    // Robuste Firebase Initialisierung mit mehreren Checks
+    // Robust Firebase initialization with fallback logic
     FirebaseApp? app;
     
     try {
-      // Versuche zuerst die Default App zu holen
+      // Try to get existing app first
       app = Firebase.app();
-      print('✅ Firebase already initialized (found existing app)');
+      LoggerService.info('Firebase already initialized (existing app)');
     } catch (e) {
-      // Wenn keine App existiert, initialisiere neu
       try {
         app = await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
-        print('✅ Firebase initialized successfully (new app created)');
+        LoggerService.info('Firebase initialized successfully');
       } catch (initError) {
-        // Falls Initialisierung fehlschlägt, aber App existiert, hole sie
         if (initError.toString().contains('duplicate-app')) {
           app = Firebase.app();
-          print('✅ Firebase already initialized (caught duplicate)');
+          LoggerService.info('Firebase already initialized (duplicate caught)');
         } else {
           rethrow;
         }
@@ -44,8 +49,7 @@ void main() async {
       ),
     );
   } catch (e, stackTrace) {
-    print('❌ Firebase initialization failed: $e');
-    print('Stack trace: $stackTrace');
+    LoggerService.critical('Firebase initialization failed', e, stackTrace);
     runApp(ErrorApp(error: e.toString()));
   }
 }

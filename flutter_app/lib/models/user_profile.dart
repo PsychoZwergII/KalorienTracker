@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../services/validation_service.dart';
 
 part 'user_profile.g.dart';
 
@@ -40,13 +41,65 @@ class UserProfile {
     this.weightGoal,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) {
+    _validate();
+  }
+
+  void _validate() {
+    // Validate optional fields when present
+    if (currentWeight != null) {
+      final error = ValidationService.validateWeight(currentWeight!);
+      if (error != null) throw ArgumentError(error);
+    }
+    if (startWeight != null) {
+      final error = ValidationService.validateWeight(startWeight!);
+      if (error != null) throw ArgumentError(error);
+    }
+    if (targetWeight != null) {
+      final error = ValidationService.validateWeight(targetWeight!);
+      if (error != null) throw ArgumentError(error);
+    }
+    if (height != null) {
+      final error = ValidationService.validateHeight(height!);
+      if (error != null) throw ArgumentError(error);
+    }
+    if (age != null) {
+      final error = ValidationService.validateAge(age!);
+      if (error != null) throw ArgumentError(error);
+    }
+
+    // Validate timestamps
+    final createdError = ValidationService.validateTimestamp(createdAt);
+    if (createdError != null) throw ArgumentError('Invalid createdAt: $createdError');
+    
+    final updatedError = ValidationService.validateTimestamp(updatedAt);
+    if (updatedError != null) throw ArgumentError('Invalid updatedAt: $updatedError');
+
+    // Validate consistency: current weight should be between start and target (roughly)
+    if (currentWeight != null && startWeight != null && targetWeight != null) {
+      // Warn if weight is going in wrong direction, but don't block
+      final towardsGoal = (currentWeight! - startWeight!).abs();
+      final totalDistance = (targetWeight! - startWeight!).abs();
+      if (towardsGoal > totalDistance * 1.5) {
+        // User went way beyond target, but allow it
+      }
+    }
+  }
 
   /// Berechnet BMR (Basal Metabolic Rate) mit Mifflin-St Jeor Formel
   /// Männer: BMR = (10 × Gewicht in kg) + (6,25 × Groesse in cm) - (5 × Alter in Jahren) + 5
   /// Frauen: BMR = (10 × Gewicht in kg) + (6,25 × Groesse in cm) - (5 × Alter in Jahren) - 161
   double? calculateBMR() {
     if (currentWeight == null || height == null || age == null || gender == null) {
+      return null;
+    }
+    
+    // Validate inputs before calculation
+    final weightError = ValidationService.validateWeight(currentWeight!);
+    final heightError = ValidationService.validateHeight(height!);
+    final ageError = ValidationService.validateAge(age!);
+    
+    if (weightError != null || heightError != null || ageError != null) {
       return null;
     }
     
@@ -83,16 +136,23 @@ class UserProfile {
       return null;
     }
     
+    // Clamp to reasonable range
+    const minCalories = 1000.0;
+    const maxCalories = 5000.0;
+    
+    double goal;
     switch (weightGoal!) {
       case WeightGoal.lose:
-        return tdee - 500;
+        goal = tdee - 500;
       case WeightGoal.gain:
-        return tdee + 300;
+        goal = tdee + 300;
       case WeightGoal.maintain:
-        return tdee;
+        goal = tdee;
       case WeightGoal.muscle:
-        return tdee + 500; // Muskelaufbau: mehr Kalorienüberschuss
+        goal = tdee + 500;
     }
+    
+    return goal.clamp(minCalories, maxCalories);
   }
 
   /// Berechnet Fortschritt zum Zielgewicht in Prozent

@@ -4,6 +4,8 @@ import '../models/food_item.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/openfoodfacts_service.dart';
+import '../services/logger_service.dart';
+import '../services/error_handler_service.dart';
 
 class ManualFoodEntryScreen extends StatefulWidget {
   final String mealType;
@@ -54,6 +56,7 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
   void dispose() {
     _debounce?.cancel();
     _removeOverlay();
+    _overlayEntry?.remove();
     _searchFocusNode.removeListener(_handleSearchFocusChange);
     _searchFocusNode.dispose();
     _searchController.removeListener(_handleSearchTextChange);
@@ -159,12 +162,12 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
     });
 
     try {
-      print('🔍 Manual Food Search started for: "$query"');
+      LoggerService.debug('🔍 Manual Food Search started for: "$query"');
       
       final results = await _openFoodFactsService.searchProducts(query);
       if (!mounted) return;
 
-      print('✅ Search returned ${results.length} results (all translated)');
+      LoggerService.debug('✅ Search returned ${results.length} results (all translated)');
       
       // Only show results after everything is translated
       setState(() {
@@ -172,12 +175,19 @@ class _ManualFoodEntryScreenState extends State<ManualFoodEntryScreen> {
         _showSearchResults = true;
       });
     } catch (e) {
-      print('❌ Search error: $e');
+      LoggerService.error('❌ Search error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Suche fehlgeschlagen: $e')),
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          e,
+          context_: 'ManualFoodEntryScreen._performSearch',
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    }
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }

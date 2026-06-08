@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/food_item.dart';
+import './logger_service.dart';
 
 class OpenFoodFactsService {
   // BLV Swiss Food Composition Database API + FoodRepo für Barcodes
@@ -46,17 +47,17 @@ class OpenFoodFactsService {
         }
       }
       
-      print('⚠️ Translation API returned ${response.statusCode} for "$text"');
+      LoggerService.warning('Translation API returned ${response.statusCode} for "$text"');
       _translationCache[cacheKey] = text; // Cache original as fallback
       return text;
     } catch (e) {
-      print('⚠️ Translation API Error for "$text": $e');
+      LoggerService.warning('Translation API Error for "$text": $e');
       _translationCache[cacheKey] = text; // Cache original as fallback
       return text; // Return original if translation fails
     }
   }
   
-  /// Search for products by name or query (BLV API)
+  /// Search for products by name or query (BLV API) with parallel parsing
   Future<List<FoodItem>> searchProducts(String query) async {
     if (query.trim().isEmpty) return [];
 
@@ -72,7 +73,7 @@ class OpenFoodFactsService {
         lang = 'de';
       }
 
-      print('🔍 Search: "$query" (German: $isGerman) → Query: "$apiQuery" (lang: $lang)');
+      LoggerService.debug('🔍 Search: "$query" (German: $isGerman) → Query: "$apiQuery" (lang: $lang)');
 
       final url = Uri.parse('$_blvApiUrl/foods')
           .replace(queryParameters: {
@@ -81,12 +82,12 @@ class OpenFoodFactsService {
             'lang': lang,
           });
 
-      print('📡 Calling: $url');
+      LoggerService.debug('📡 Calling: $url');
 
       final response = await http.get(url).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
-        print('❌ API returned ${response.statusCode}');
+        LoggerService.warning('❌ API returned ${response.statusCode}');
         return [];
       }
 
@@ -95,29 +96,42 @@ class OpenFoodFactsService {
       // BLV returns a direct List
       final foods = (jsonData is List ? jsonData : []) as List<dynamic>;
 
-      print('📊 Got ${foods.length} results');
+      LoggerService.debug('📊 Got ${foods.length} results');
 
       if (foods.isEmpty) {
         return [];
       }
 
-      // Parse each food item (max 15 to avoid too many API calls)
+      // Parse up to 15 items, but do it in parallel batches of 5 for performance
       final List<FoodItem> results = [];
-      for (int i = 0; i < foods.length && i < 15; i++) {
+      final foodsToProcess = foods.take(15).toList();
+      
+      // Process in batches of 5 concurrent requests
+      for (int batchStart = 0; batchStart < foodsToProcess.length; batchStart += 5) {
+        final batchEnd = (batchStart + 5).clamp(0, foodsToProcess.length);
+        final batch = foodsToProcess.sublist(batchStart, batchEnd);
+        
         try {
-          final item = await _parseBLVFood(foods[i] as Map<String, dynamic>, translateToGerman: isGerman);
-          if (item != null) {
-            results.add(item);
+          final batchResults = await Future.wait(
+            batch.map((food) => _parseBLVFood(
+              food as Map<String, dynamic>,
+              translateToGerman: isGerman,
+            )),
+            eagerError: false, // Continue if one fails
+          );
+          
+          for (final item in batchResults) {
+            if (item != null) results.add(item);
           }
         } catch (e) {
-          print('⚠️ Parse error at $i: $e');
+          LoggerService.warning('⚠️ Parse batch error: $e');
         }
       }
 
-      print('✅ Created ${results.length} items');
+      LoggerService.debug('✅ Created ${results.length} items');
       return results;
     } catch (e) {
-      print('❌ Search error: $e');
+      LoggerService.error('❌ Search error: $e');
       return [];
     }
   }
@@ -166,20 +180,20 @@ class OpenFoodFactsService {
         return null;
       }
 
-      print('🔄 Parsing: $name (ID: $foodId)');
+      LoggerService.debug('🔄 Parsing: $name (ID: $foodId)');
 
       // Fetch detailed nutrition data
       final nutrients = await _fetchFoodNutrients(foodId);
       
       // Skip if no calories found
       if (nutrients['calories']! <= 0) {
-        print('⚠️ No calories for "$name"');
+        LoggerService.warning('⚠️ No calories for "$name"');
         return null;
       }
 
       // Translate food name to German only if original query was in German
       final displayName = translateToGerman ? await _translateText(name, 'en', 'de') : name;
-      print('✅ Created: $displayName - ${nutrients['calories']!.toStringAsFixed(1)} kcal');
+      LoggerService.debug('✅ Created: $displayName - ${nutrients['calories']!.toStringAsFixed(1)} kcal');
 
       return FoodItem(
         id: foodId,
@@ -194,7 +208,7 @@ class OpenFoodFactsService {
         mealType: 'snack',
       );
     } catch (e) {
-      print('❌ Parse error: $e');
+      LoggerService.error('❌ Parse error: $e');
       return null;
     }
   }
@@ -224,7 +238,7 @@ class OpenFoodFactsService {
         'fiber': 0.0,
       };
     } catch (e) {
-      print('⚠️ Error fetching nutrients for $foodId: $e');
+      LoggerService.warning('⚠️ Error fetching nutrients for $foodId: $e');
       return {
         'calories': 0.0,
         'protein': 0.0,
@@ -276,7 +290,7 @@ class OpenFoodFactsService {
       
       return nutrients;
     } catch (e) {
-      print('⚠️ Error extracting nutrients: $e');
+      LoggerService.warning('⚠️ Error extracting nutrients: $e');
       return {
         'calories': 0.0,
         'protein': 0.0,
@@ -298,14 +312,14 @@ class OpenFoodFactsService {
       }
       return 0.0;
     } catch (e) {
-      print('⚠️ Error converting $value to double: $e');
+      LoggerService.warning('⚠️ Error converting $value to double: $e');
       return 0.0;
     }
   }
 
   /// Get product by barcode (FoodRepo)
   Future<FoodItem?> getProductByBarcode(String barcode) async {
-    print('🔍 FoodRepo Barcode Search: $barcode');
+    LoggerService.debug('🔍 FoodRepo Barcode Search: $barcode');
     return await _searchFoodRepo(barcode);
   }
   
@@ -322,27 +336,27 @@ class OpenFoodFactsService {
         final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>?;
         
         if (json == null) {
-          print('⚠️ FoodRepo: Empty response');
+          LoggerService.warning('⚠️ FoodRepo: Empty response');
           return null;
         }
         
         final data = json['data'] as Map<String, dynamic>?;
         
         if (data == null) {
-          print('⚠️ FoodRepo: No data field in response');
+          LoggerService.warning('⚠️ FoodRepo: No data field in response');
           return null;
         }
         
         return _parseFoodRepoProduct(data);
       } else if (response.statusCode == 404) {
-        print('⚠️ FoodRepo: Product not found for barcode $barcode');
+        LoggerService.warning('⚠️ FoodRepo: Product not found for barcode $barcode');
         return null;
       } else {
-        print('⚠️ FoodRepo API returned ${response.statusCode}');
+        LoggerService.warning('⚠️ FoodRepo API returned ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ FoodRepo search failed: $e');
+      LoggerService.error('❌ FoodRepo search failed: $e');
       return null;
     }
   }
@@ -352,13 +366,13 @@ class OpenFoodFactsService {
     try {
       final name = data['name'] as String? ?? data['display_name'] as String? ?? '';
       if (name.isEmpty) {
-        print('⚠️ FoodRepo: Empty product name');
+        LoggerService.warning('⚠️ FoodRepo: Empty product name');
         return null;
       }
 
       final barcode = data['barcode']?.toString();
       if (barcode == null || barcode.isEmpty) {
-        print('⚠️ FoodRepo: No barcode in product data');
+        LoggerService.warning('⚠️ FoodRepo: No barcode in product data');
         return null;
       }
 
@@ -382,7 +396,7 @@ class OpenFoodFactsService {
 
       // Validierung: Mindestens eine Nährwert sollte > 0 sein
       if (calories <= 0 && protein <= 0 && fat <= 0 && carbs <= 0) {
-        print('⚠️ FoodRepo: Product has no valid nutrition data');
+        LoggerService.warning('⚠️ FoodRepo: Product has no valid nutrition data');
         return null;
       }
 
@@ -400,7 +414,7 @@ class OpenFoodFactsService {
         barcode: barcode,
       );
     } catch (e) {
-      print('❌ Error parsing FoodRepo product: $e');
+      LoggerService.error('❌ Error parsing FoodRepo product: $e');
       return null;
     }
   }
