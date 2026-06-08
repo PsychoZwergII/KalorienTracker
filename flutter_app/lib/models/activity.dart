@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../services/validation_service.dart';
 
 part 'activity.g.dart';
 
@@ -7,7 +8,7 @@ class Activity {
   final String activityId;
   final String userId;
   final ActivityType type;
-  final String? customName; // Falls "other" gewählt wird
+  final String? customName;
   final int durationMinutes;
   final double caloriesBurned;
   final ActivityIntensity intensity;
@@ -24,7 +25,31 @@ class Activity {
     this.intensity = ActivityIntensity.medium,
     required this.timestamp,
     this.notes,
-  });
+  }) {
+    _validate();
+  }
+
+  void _validate() {
+    // Validate duration
+    final durationError = ValidationService.validateActivityDuration(durationMinutes);
+    if (durationError != null) {
+      throw ArgumentError(durationError);
+    }
+
+    // Validate calories burned (should be reasonable)
+    if (caloriesBurned < 0) {
+      throw ArgumentError('Calories burned cannot be negative');
+    }
+    if (caloriesBurned > 2000) {
+      throw ArgumentError('Calories burned value seems unreasonable (> 2000)');
+    }
+
+    // Validate timestamp
+    final timestampError = ValidationService.validateTimestamp(timestamp);
+    if (timestampError != null) {
+      throw ArgumentError(timestampError);
+    }
+  }
 
   /// Berechnet verbrannte Kalorien basierend auf Aktivitätstyp, Dauer und Gewicht
   /// MET (Metabolic Equivalent of Task) × Gewicht (kg) × Dauer (Stunden)
@@ -34,9 +59,23 @@ class Activity {
     required double weightKg,
     ActivityIntensity intensity = ActivityIntensity.medium,
   }) {
+    // Validate inputs
+    final durationError = ValidationService.validateActivityDuration(durationMinutes);
+    if (durationError != null) {
+      throw ArgumentError('Invalid duration: $durationError');
+    }
+
+    final weightError = ValidationService.validateWeight(weightKg);
+    if (weightError != null) {
+      throw ArgumentError('Invalid weight: $weightError');
+    }
+
     final met = type.metValue;
     final hours = durationMinutes / 60.0;
-    return met * weightKg * hours * intensity.multiplier;
+    final calories = met * weightKg * hours * intensity.multiplier;
+    
+    // Clamp to reasonable range
+    return calories.clamp(0, 2000);
   }
 
   factory Activity.fromJson(Map<String, dynamic> json) => _$ActivityFromJson(json);

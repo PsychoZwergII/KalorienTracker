@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/validation_service.dart';
 
 part 'food_item.g.dart';
 
@@ -31,26 +32,61 @@ class FoodItem {
     this.isFavorite = false,
     this.source = "manual",
     this.mealType,
-  });
+  }) {
+    // Validate on construction
+    _validate();
+  }
+
+  void _validate() {
+    // Validate label
+    ValidationService.validateLabel(label);
+
+    // Validate nutrients
+    ValidationService.validateNutrients(
+      calories: calories,
+      protein: protein,
+      fat: fat,
+      carbs: carbs,
+      fiber: fiber,
+    );
+
+    // Validate timestamp
+    ValidationService.validateTimestamp(timestamp);
+
+    // Validate barcode if present
+    if (barcode != null && barcode!.isNotEmpty) {
+      ValidationService.validateBarcode(barcode!);
+    }
+  }
 
   factory FoodItem.fromJson(Map<String, dynamic> json) =>
       _$FoodItemFromJson(json);
 
   factory FoodItem.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    return FoodItem(
-      id: doc.id,
-      barcode: data['barcode'],
-      label: data['label'] ?? 'Unknown',
+    
+    // Sanitize nutrient values
+    final sanitized = ValidationService.sanitizeNutrients(
       calories: (data['calories'] ?? 0).toDouble(),
       protein: (data['protein'] ?? 0).toDouble(),
       fat: (data['fat'] ?? 0).toDouble(),
       carbs: (data['carbs'] ?? 0).toDouble(),
       fiber: (data['fiber'] ?? 0).toDouble(),
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
+    );
+
+    return FoodItem(
+      id: doc.id,
+      barcode: data['barcode'] as String?,
+      label: data['label'] ?? 'Unknown',
+      calories: sanitized.calories,
+      protein: sanitized.protein,
+      fat: sanitized.fat,
+      carbs: sanitized.carbs,
+      fiber: sanitized.fiber,
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isFavorite: data['isFavorite'] ?? false,
       source: data['source'] ?? 'manual',
-      mealType: data['mealType'],
+      mealType: data['mealType'] as String?,
     );
   }
 
@@ -99,6 +135,22 @@ class FoodItem {
       isFavorite: isFavorite ?? this.isFavorite,
       source: source ?? this.source,
       mealType: mealType ?? this.mealType,
+    );
+  }
+
+  /// Calculate total macronutrients
+  double getTotalMacrosGrams() => protein + fat + carbs;
+
+  /// Calculate macro percentages
+  ({double proteinPct, double fatPct, double carbsPct}) getMacroPercentages() {
+    final totalCals = protein * 4 + fat * 9 + carbs * 4;
+    if (totalCals == 0) {
+      return (proteinPct: 0, fatPct: 0, carbsPct: 0);
+    }
+    return (
+      proteinPct: (protein * 4 / totalCals) * 100,
+      fatPct: (fat * 9 / totalCals) * 100,
+      carbsPct: (carbs * 4 / totalCals) * 100,
     );
   }
 }

@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'logger_service.dart';
 
 class FirebaseAuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
   );
 
@@ -18,7 +19,7 @@ class FirebaseAuthService {
     try {
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        print('ℹ️ Google Sign-In cancelled by user');
+        LoggerService.info('Google Sign-In cancelled by user');
         return null; // User cancelled, not an error
       }
 
@@ -29,13 +30,13 @@ class FirebaseAuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      print('✅ Google Sign-In successful: ${userCredential.user?.email}');
+      LoggerService.info('Google Sign-In successful: ${userCredential.user?.email}');
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
+      LoggerService.error('Firebase Auth Error [${e.code}]: ${e.message}', e);
       rethrow;
-    } catch (e) {
-      print('❌ Google Sign-In Error: $e');
+    } catch (e, st) {
+      LoggerService.error('Google Sign-In Error', e, st);
       rethrow;
     }
   }
@@ -47,12 +48,13 @@ class FirebaseAuthService {
         email: email,
         password: password,
       );
+      LoggerService.info('Email sign-in successful: $email');
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
-      rethrow; // Throw the exception so UI can handle it
-    } catch (e) {
-      print('❌ Sign In Error: $e');
+      LoggerService.error('Firebase Auth Error [${e.code}]: ${e.message}', e);
+      rethrow;
+    } catch (e, st) {
+      LoggerService.error('Sign In Error', e, st);
       rethrow;
     }
   }
@@ -69,12 +71,13 @@ class FirebaseAuthService {
       await userCredential.user?.updateDisplayName(displayName);
       await userCredential.user?.reload();
       
+      LoggerService.info('Account created: $email ($displayName)');
       return _auth.currentUser;
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth Error [${e.code}]: ${e.message}');
-      rethrow; // Throw the exception so UI can handle it
-    } catch (e) {
-      print('❌ Create Account Error: $e');
+      LoggerService.error('Firebase Auth Error [${e.code}]: ${e.message}', e);
+      rethrow;
+    } catch (e, st) {
+      LoggerService.error('Create Account Error', e, st);
       rethrow;
     }
   }
@@ -82,19 +85,23 @@ class FirebaseAuthService {
   /// Sign out
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
-      await _googleSignIn.signOut();
-    } catch (e) {
-      print('Sign Out Error: $e');
+      await Future.wait([
+        _auth.signOut(),
+        _googleSignIn.signOut(),
+      ]);
+      LoggerService.info('User signed out');
+    } catch (e, st) {
+      LoggerService.warning('Sign Out Error', e, st);
+      rethrow;
     }
   }
 
-  /// Get ID token for Cloud Function calls
-  Future<String?> getIdToken() async {
+  /// Get ID token for Cloud Function calls (with refresh)
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
     try {
-      return await _auth.currentUser?.getIdToken();
-    } catch (e) {
-      print('Get ID Token Error: $e');
+      return await _auth.currentUser?.getIdToken(forceRefresh);
+    } catch (e, st) {
+      LoggerService.error('Failed to get ID token', e, st);
       return null;
     }
   }
@@ -107,4 +114,21 @@ class FirebaseAuthService {
 
   /// Get user display name
   String? getUserDisplayName() => _auth.currentUser?.displayName;
+
+  /// Check if user is authenticated
+  bool isAuthenticated() => _auth.currentUser != null;
+
+  /// Get user email verification status
+  bool isEmailVerified() => _auth.currentUser?.emailVerified ?? false;
+
+  /// Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      LoggerService.info('Password reset email sent to: $email');
+    } catch (e, st) {
+      LoggerService.error('Failed to send password reset email', e, st);
+      rethrow;
+    }
+  }
 }
