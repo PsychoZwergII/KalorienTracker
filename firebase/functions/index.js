@@ -9,6 +9,45 @@ const TIMEOUT_MS = 25000; // 25 seconds
 const MAX_IMAGE_SIZE = 5000000; // 5MB base64
 const MAX_BARCODE_LENGTH = 14;
 
+// Rate limiting: track requests per user per hour
+// In production, use Redis or Firestore instead of in-memory cache
+const userRequestCounts = new Map();
+const RATE_LIMIT_IMAGE_REQUESTS_PER_HOUR = 50; // 50 image analyses per hour
+const RATE_LIMIT_BARCODE_REQUESTS_PER_HOUR = 100; // 100 barcode lookups per hour
+const REQUEST_COUNT_RESET_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Rate limiter helper - checks if user has exceeded hourly limit
+ * @param {string} userId - Firebase user ID
+ * @param {number} limit - Requests allowed per hour
+ * @returns {object} { allowed: boolean, remaining: number, resetAt: number }
+ */
+function checkRateLimit(userId, limit) {
+  const now = Date.now();
+  
+  if (!userRequestCounts.has(userId)) {
+    userRequestCounts.set(userId, { count: 1, resetAt: now + REQUEST_COUNT_RESET_MS });
+    return { allowed: true, remaining: limit - 1, resetAt: now + REQUEST_COUNT_RESET_MS };
+  }
+
+  const userData = userRequestCounts.get(userId);
+  
+  // Reset if period expired
+  if (now > userData.resetAt) {
+    userRequestCounts.set(userId, { count: 1, resetAt: now + REQUEST_COUNT_RESET_MS });
+    return { allowed: true, remaining: limit - 1, resetAt: now + REQUEST_COUNT_RESET_MS };
+  }
+  
+  // Check limit
+  const allowed = userData.count < limit;
+  const remaining = Math.max(0, limit - userData.count - 1);
+  
+  // Increment for next check
+  userData.count++;
+  
+  return { allowed, remaining, resetAt: userData.resetAt };
+}
+
 /**
  * Cloud Function: Analyze food image using Google Generative AI
  * 
@@ -66,6 +105,20 @@ exports.analyzeFood = functions
       }
 
       const userId = decodedToken.uid;
+      
+      // Check rate limit for image analysis
+      const rateLimitCheck = checkRateLimit(userId, RATE_LIMIT_IMAGE_REQUESTS_PER_HOUR);
+      if (!rateLimitCheck.allowed) {
+        return res.status(429).json({
+          error: 'Rate limit exceeded: Maximum 50 image analyses per hour',
+          resetAt: rateLimitCheck.resetAt
+        });
+      }
+      
+      // Add rate limit info to response headers
+      res.set('X-RateLimit-Remaining', String(rateLimitCheck.remaining));
+      res.set('X-RateLimit-Reset', String(rateLimitCheck.resetAt));
+      
       const { imageBase64 } = req.body;
 
       // Validate input
@@ -240,6 +293,20 @@ exports.getBarcodeData = functions
       }
 
       const userId = decodedToken.uid;
+      
+      // Check rate limit for barcode lookup
+      const rateLimitCheck = checkRateLimit(userId, RATE_LIMIT_BARCODE_REQUESTS_PER_HOUR);
+      if (!rateLimitCheck.allowed) {
+        return res.status(429).json({
+          error: 'Rate limit exceeded: Maximum 100 barcode lookups per hour',
+          resetAt: rateLimitCheck.resetAt
+        });
+      }
+      
+      // Add rate limit info to response headers
+      res.set('X-RateLimit-Remaining', String(rateLimitCheck.remaining));
+      res.set('X-RateLimit-Reset', String(rateLimitCheck.resetAt));
+      
       const { barcode } = req.body;
 
       // Validate input

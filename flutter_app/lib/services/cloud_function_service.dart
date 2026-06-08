@@ -92,6 +92,10 @@ class CloudFunctionService {
       } else if (response.statusCode == 401) {
         LoggerService.error('Unauthorized: Invalid or expired token');
         return null;
+      } else if (response.statusCode == 429) {
+        final resetTime = response.headers['x-ratelimit-reset'];
+        LoggerService.error('Rate limit exceeded. Reset at: $resetTime');
+        return null;
       } else if (response.statusCode == 400) {
         LoggerService.error('Bad request: ${response.body}');
         return null;
@@ -183,6 +187,10 @@ class CloudFunctionService {
         return null;
       } else if (response.statusCode == 401) {
         LoggerService.error('Unauthorized: Invalid or expired token');
+        return null;
+      } else if (response.statusCode == 429) {
+        final resetTime = response.headers['x-ratelimit-reset'];
+        LoggerService.error('Rate limit exceeded. Reset at: $resetTime');
         return null;
       } else {
         LoggerService.error('Get Barcode Data Error: ${response.statusCode}');
